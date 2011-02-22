@@ -53,6 +53,7 @@ public class DynamicMarket extends JavaPlugin
 	//public static YamlPropFile yamlPropTest;
  
 			
+	// On newer builds of CraftBukkit, commenting out this constructor cause an InvalidPluginException on load.
 	public DynamicMarket(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
 		super(pluginLoader, instance, desc, folder, plugin, cLoader);
 
