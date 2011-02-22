@@ -427,32 +427,43 @@ public class iListen extends PlayerListener
 			}
 
 		 
-		   private int get_balance(String name) {
-		     return iConomy.db.get_balance(name);
-		   }
-		 
-		   private void set_balance(String name, int amount) {
-		     iConomy.db.set_balance(name, amount);
-		   }
-		 
-		   private void show_balance(Player player) {
-		     plugin.iC.l.showBalance(player.getName(), player, true);
-		   }
-		 
-
-			private boolean shopShowItemInfo(String itemString, Messaging message, boolean fullInfo, String shopLabel)
-			{
-				ItemClump requested = new ItemClump(itemString, plugin.db, shopLabel);
+	private int get_balance(String name)
+	{
+		if ((name != null) && (!name.isEmpty()))		
+			return iConomy.db.get_balance(name);
+		return 0;
+	}
  
-				if (!requested.isValid()) {
-					message.send(plugin.shop_tag + "{ERR}Unrecognized or invalid item or command.");
-					return false;
-				}
+	private void set_balance(String name, int amount)
+	{
+		if ((name != null) && (!name.isEmpty()))
+			iConomy.db.set_balance(name, amount);
+	}
  
-				MarketItem data = plugin.db.data(requested, shopLabel);
+	private void show_balance(Player player)
+	{
+		plugin.iC.l.showBalance(player.getName(), player, true);
+	}
+   
+	private void delta_balance(String name, int amount)
+	{
+		if ((name != null) && (!name.isEmpty()))
+			iConomy.db.set_balance(name, iConomy.db.get_balance(name) + amount);
+	}
 
-				if (data == null) {
-					message.send(plugin.shop_tag + "{ERR}Item currently not traded in shop.");
+	private boolean shopShowItemInfo(String itemString, Messaging message, boolean fullInfo, String shopLabel)
+	{
+		ItemClump requested = new ItemClump(itemString, plugin.db, shopLabel);
+
+		if (!requested.isValid()) {
+			message.send(plugin.shop_tag + "{ERR}Unrecognized or invalid item or command.");
+			return false;
+		}
+ 
+		MarketItem data = plugin.db.data(requested, shopLabel);
+
+		if (data == null) {
+			message.send(plugin.shop_tag + "{ERR}Item currently not traded in shop.");
 			return false;
 		}
 
@@ -472,7 +483,7 @@ public class iListen extends PlayerListener
 		return true;
 	}
 
-	private boolean shopBuyItem(Player player, String itemString, String shopLabel)
+	private boolean shopBuyItem(Player player, String itemString, String shopLabel, String accountName)
 	{
 		//TODO: Check for sufficient inventory space for received items.
 		ItemClump requested = new ItemClump(itemString, plugin.db, shopLabel);
@@ -510,22 +521,25 @@ public class iListen extends PlayerListener
 			return false;
 		}
 
-		if ((requested.count < 1) || (requested.count * data.count > plugin.max_per_purchase)) {
+		if ((requested.count < 1) || (requested.count * data.count > plugin.max_per_purchase))
+		{
 			message.send(plugin.shop_tag + "{ERR}Amount over max items per purchase.");
-					return false;
-				}
+			return false;
+		}
  
-				transValue = data.getBuyPrice(requested.count);
+		transValue = data.getBuyPrice(requested.count);
 				
-				//if (balance < data.buy * requested.count) {
-		if (balance < transValue) {
+		//if (balance < data.buy * requested.count) {
+		if (balance < transValue)
+		{
 			message.send(plugin.shop_tag + "{ERR}You do not have enough " + plugin.currency + " to do this.");
-					message.send(data.infoStringBuy(requested.count));
-					return false;
-				}
+			message.send(data.infoStringBuy(requested.count));
+			return false;
+		}
  
-				//set_balance(player.getName(), balance - (data.buy * requested.count));
-		set_balance(player.getName(), balance - transValue);
+		//set_balance(player.getName(), balance - (data.buy * requested.count));
+		delta_balance(player.getName(), -transValue);
+		delta_balance(accountName, transValue);
 
 		player.getInventory().addItem(new ItemStack[] { new ItemStack(data.itemId, requested.count * data.count, (short) 0, (byte)requested.subType) });
 		
@@ -536,12 +550,12 @@ public class iListen extends PlayerListener
 		return true;
 	}
 	
-	private boolean shopSellItem(Player player, String itemString, String shopLabel)
+	private boolean shopSellItem(Player player, String itemString, String shopLabel, String accountName, boolean freeAccount)
 	{
 		ItemClump requested = new ItemClump(itemString, plugin.db, shopLabel);
 		Messaging message = new Messaging(player);
 
-		int balance = get_balance(player.getName());
+		//int balance = get_balance(player.getName());
 		int transValue;
 
 		if (!requested.isValid()) {
@@ -584,24 +598,34 @@ public class iListen extends PlayerListener
 
 		transValue = data.getSellPrice(requested.count);
 		
+		if (!freeAccount)
+		{
+			if (get_balance(accountName) < transValue)
+			{
+				message.send(plugin.shop_tag + "{ERR}Shop account does not have enough " + iConomy.currency + " to pay for " + data.formatBundleCount(requested.count) +" "+data.getName()+".");
+				return false;
+			}	
+		}
+		
 		plugin.items.remove(player, data, requested.count);
 
 		//set_balance(player.getName(), balance + data.sell * requested.count);
-		set_balance(player.getName(), balance + transValue);
+		delta_balance(player.getName(), transValue);
+		delta_balance(accountName, -transValue);
 		plugin.db.addStock(requested, shopLabel);
 
 		message.send(plugin.shop_tag + "Sold {BKT}[{PRM}" + data.formatBundleCount(requested.count) + "{BKT}]{PRM} " + data.getName() + "{} for {PRM}" + transValue + " " + iConomy.currency);
-				show_balance(player);
-				return true;
-			}
+		show_balance(player);
+		return true;
+	}
 			
-			
-			private boolean shopAddItem(String itemString, Messaging message, String shopLabel)
-			{
-				MarketItem newItem = new MarketItem(itemString, plugin.db.getDefault(shopLabel), plugin.db, shopLabel);
+	private boolean shopAddItem(String itemString, Messaging message, String shopLabel)
+	{
+		MarketItem newItem = new MarketItem(itemString, plugin.db.getDefault(shopLabel), plugin.db, shopLabel);
  
-				if (!newItem.isValid()) {
-					message.send(plugin.shop_tag + "{ERR}Unrecognized item name or ID.");
+		if (!newItem.isValid())
+		{
+			message.send(plugin.shop_tag + "{ERR}Unrecognized item name or ID.");
 			return false;
 		}
 
@@ -689,16 +713,16 @@ public class iListen extends PlayerListener
 				}
 			}
 			
-			private boolean shopRemoveItem(String itemString, Messaging message, String shopLabel)
-			{
-				ItemClump removed = new ItemClump(itemString, plugin.db, shopLabel);
-				String removedItemName = null;
+	private boolean shopRemoveItem(String itemString, Messaging message, String shopLabel)
+	{
+		ItemClump removed = new ItemClump(itemString, plugin.db, shopLabel);
+		String removedItemName = null;
  
-				if (removed.itemId == -1) {
-					message.send(plugin.shop_tag + "{ERR}Unrecognized item name or ID.");
+		if (removed.itemId == -1) {
+			message.send(plugin.shop_tag + "{ERR}Unrecognized item name or ID.");
 			return false;
 		}
-		
+	
 		MarketItem itemToRemove = plugin.db.data(removed, shopLabel);
 		
 		if (itemToRemove == null)
@@ -722,7 +746,6 @@ public class iListen extends PlayerListener
 			return false;
 		}
 	}
-
 
 	public boolean shopReset(CommandSender sender, String confirmString, String shopLabel)
 	{
@@ -775,13 +798,19 @@ public class iListen extends PlayerListener
 			// event.setCancelled(true)?
 		}
 	}
-
-	public boolean onCommand(CommandSender sender, String cmd, String commandLabel, String[] args, String shopLabel) 
+	
+	public boolean onCommand(CommandSender sender, String cmd, String commandLabel, String[] args, String shopLabel) 	
 	{
-		
+		return parseCommand(sender, cmd, args, shopLabel, "", true);
+	}
+
+	public boolean parseCommand(CommandSender sender, String cmd, String[] args, String shopLabel, String accountName, boolean freeAccount)
+	{
 		//String commandName = cmd.getName().toLowerCase();
 		
 		//TODO: Show helpful errors for inappropriate numbers of arguments.
+		//accountName: iConomy account which receives/provides the money from/to transactions.
+		//freeAccount: If true, account is not checked for debt.
 		
 		//Player player = (Player) sender;
 		Messaging message = new Messaging(sender);
@@ -831,7 +860,7 @@ public class iListen extends PlayerListener
 					message.send("{ERR}You do not have permission to buy from the shop.");
 					return false;
 				}
-				return shopBuyItem((Player)sender, args[1], shopLabel);
+				return shopBuyItem((Player)sender, args[1], shopLabel, accountName);
       		}
 
 			if ((Misc.isEither(subCommand, "sell", "-s")) && (args.length >= 2)) {
@@ -844,7 +873,7 @@ public class iListen extends PlayerListener
 					message.send("{ERR}You do not have permission to sell to the shop.");
 					return false;
 				}
-				return shopSellItem((Player)sender, args[1], shopLabel);
+				return shopSellItem((Player)sender, args[1], shopLabel, accountName, freeAccount);
 			}
 
 			if (subCommand.equalsIgnoreCase("reload")) {
@@ -888,8 +917,10 @@ public class iListen extends PlayerListener
 				}
 			}
 			
-			if (subCommand.equalsIgnoreCase("importDB")) {
-				if (!(hasPermission(sender,"admin"))) {
+			if (subCommand.equalsIgnoreCase("importDB"))
+			{
+				if (!(hasPermission(sender,"admin")))
+				{
 					message.send("{ERR}You do not have permission to import the shop DB.");
 					return false;
 				}
@@ -902,12 +933,13 @@ public class iListen extends PlayerListener
 				{
 					message.send("{ERR} Database import from {PRM}"+shopLabel+DynamicMarket.csvFileName+"{ERR} NOT successful.");
 					message.send("{ERR} See Bukkit console for details.");
-							return false;
-						}
-       				}
+					return false;
+				}
+       		}
  
-					if ((Misc.isEither(subCommand, "add", "-a")) && (args.length > 2)) {
-			// /shop add [id](:count) [buy] [sell]
+			if ((Misc.isEither(subCommand, "add", "-a")) && (args.length > 2))
+			{
+				// /shop add [id](:count) [buy] [sell] <tagList>
 				if (!(hasPermission(sender, "items.add"))) {
 					message.send("{ERR}You do not have permission to add items to the shop.");
 					return false;
@@ -915,29 +947,32 @@ public class iListen extends PlayerListener
 				return shopAddItem(Misc.combineSplit(1, args, " "), message, shopLabel);
 			}
 
-			if ((Misc.isEither(subCommand, "update", "-u")) && (args.length >= 2)) {
+			if ((Misc.isEither(subCommand, "update", "-u")) && (args.length >= 2))
+			{
 				if (!(hasPermission(sender, "items.update"))) {
 					message.send("{ERR}You do not have permission to update shop items.");
 					return false;
 				}
 				return shopUpdateItem(Misc.combineSplit(1, args, " "), message, shopLabel);
-					}
+			}
  
-					if ((Misc.isEither(subCommand, "remove", "-r")) && (args.length == 2)) {
-			// CHANGED: Remove shortcut changed to -v, to prevent collision with Reload shortcut.
+			if ((Misc.isEither(subCommand, "remove", "-r")) && (args.length == 2))
+			{
 				if (!(hasPermission(sender, "items.remove"))) {
 					message.send("{ERR}You do not have permission to remove shop items.");
-							return false;
-						}
-						return shopRemoveItem(args[1], message, shopLabel);
-					}
+					return false;
+				}
+				return shopRemoveItem(args[1], message, shopLabel);
+			}
  
-					if (Misc.isEither(subCommand, "list", "-l")) {
+			if (Misc.isEither(subCommand, "list", "-l"))
+			{
 				// Possible inputs:
 				// none (default first page, unfiltered)
 				// pageNum
 				// nameFilter
 				// nameFilter pageNum
+				// TODO: Break into another method.
 				int pageSelect = 1;
 				String nameFilter = null;
 				if (args.length == 2)
@@ -996,7 +1031,7 @@ public class iListen extends PlayerListener
 			return false;
 		}
 		
-		// /shop not matched.
-			return false;
-		}
+		// "/shop" not matched.
+		return false;
+	}
 }

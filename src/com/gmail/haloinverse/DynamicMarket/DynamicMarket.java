@@ -33,6 +33,8 @@ public class DynamicMarket extends JavaPlugin
 	public String currency;// = "Coin";
 	public int max_per_purchase = 64;
 	public int max_per_sale = 64;
+	public String defaultShopAccount = "";
+	public boolean defaultShopAccountFree = true;
  
 	private String database_type = "sqlite";
 	public static String sqlite = "jdbc:sqlite:" + directory + "shop.db";
@@ -112,27 +114,32 @@ public class DynamicMarket extends JavaPlugin
 		if (!wrapperMode)
 		{
 			boolean thisReturn;
-			thisReturn = this.playerListener.onCommand(sender, cmd.getName(), commandLabel, args, "");
+			thisReturn = this.playerListener.parseCommand(sender, cmd.getName(), args, "", defaultShopAccount, defaultShopAccountFree);
 			//log.info(Messaging.bracketize(name) + " Command returning: " + (thisReturn? "True" : "False"));
 			return thisReturn;
 		}
 		else
 			return true;
 	}
-			
-	public boolean wrapperCommand(CommandSender sender, Command cmd, String commandLabel, String[] args, String shopLabel)
+	
+	public boolean wrapperCommand(CommandSender sender, String cmd, String[] args, String shopLabel, String accountName, boolean freeAccount)
 	{
-		return this.playerListener.onCommand(sender, cmd.getName(), commandLabel, args, (shopLabel == null ? "" : shopLabel));
+		return this.playerListener.parseCommand(sender, cmd, args, (shopLabel == null ? "" : shopLabel), accountName, freeAccount);
+	}
+
+	public boolean wrapperCommand(CommandSender sender, String cmd, String[] args, String shopLabel)
+	{
+		return wrapperCommand(sender, cmd, args, (shopLabel == null ? "" : shopLabel), defaultShopAccount, defaultShopAccountFree);
 	}
 	
-	public boolean wrapperCommand(CommandSender sender, String cmd, String commandLabel, String[] args, String shopLabel)
+	public boolean wrapperCommand(CommandSender sender, String cmd, String[] args)
 	{
-		return this.playerListener.onCommand(sender, cmd, commandLabel, args, (shopLabel == null ? "" : shopLabel));
+		return wrapperCommand(sender, cmd, args, "");
 	}
- 
+
+	
 	public void setup()
 	{
-
 		Settings = new iProperty(getDataFolder() + File.separator + name + ".settings");
 	
 	    //ItemsFile = new iProperty("items.db");
@@ -166,6 +173,9 @@ public class DynamicMarket extends JavaPlugin
 		Messaging.colBracket = "&" + Settings.getString("text-colour-bracket", "d");
 		Messaging.colParam = "&" + Settings.getString("text-colour-param", "b");
 		Messaging.colError = "&" + Settings.getString("text-colour-error", "c");
+		
+		defaultShopAccount = Settings.getString("default-shop-account", "");
+		defaultShopAccountFree = Settings.getBoolean("default-shop-account-free", defaultShopAccountFree);
 		
 		//yamlPropTest = new YamlPropFile(getDataFolder() + File.separator + "SimpleMarket.yml");
 		//yamlPropTest.load();
