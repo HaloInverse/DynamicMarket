@@ -4,3 +4,11 @@ version: 0.4.5
 author: HaloInverse
 description: >
              A shop plugin building towards an interesting and flexible market system.
+commands:
+    shop:
+       description: Accesses the shop command system.
+       usage: |
+              /<command>
+              /<command> help <topic/command>
+              /<command> <itemid>
+              /<command> <subcommand> <args>

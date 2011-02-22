@@ -6,13 +6,13 @@ import com.nijikokun.bukkit.iConomy.iConomy;
 import java.io.File;
 import java.util.Timer;
 import java.util.logging.Logger;
-import org.bukkit.Server;
+//import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.Event;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginLoader;
+//import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
  
@@ -24,7 +24,8 @@ public class DynamicMarket extends JavaPlugin
 	public String codename = "Caribou";
 	public String version; // = "0.4a";
  
-	public iListen l = new iListen(this);
+	public iListen playerListener = new iListen(this);
+	public DMServerListener serverListener = new DMServerListener(this);
 	public static Permissions Permissions;
 	public static iProperty Settings;
 	public static String directory; // = "SimpleMarket" + File.separator;
@@ -54,6 +55,7 @@ public class DynamicMarket extends JavaPlugin
  
 			
 	// On newer builds of CraftBukkit, commenting out this constructor cause an InvalidPluginException on load.
+	/*
 	public DynamicMarket(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
 		super(pluginLoader, instance, desc, folder, plugin, cLoader);
 
@@ -69,6 +71,7 @@ public class DynamicMarket extends JavaPlugin
 		//registerEvents();
 		log.info(Messaging.bracketize(name) + " version " + Messaging.bracketize(version) + " (" + codename + ") loaded");
 	}
+	*/
 			
  
 	public void onDisable() {
@@ -98,19 +101,19 @@ public class DynamicMarket extends JavaPlugin
 	{
 		PluginManager thisPluginManager = getServer().getPluginManager();
 		//thisPluginManager.registerEvent(Event.Type.PLUGIN_ENABLE, this.l, Event.Priority.Normal, this);
-		thisPluginManager.registerEvent(Event.Type.PLAYER_COMMAND, this.l, Event.Priority.Normal, this);
+		thisPluginManager.registerEvent(Event.Type.PLAYER_COMMAND, this.playerListener, Event.Priority.Normal, this);
+		//thisPluginManager.registerEvent(Event.Type.SERVER_COMMAND, this.serverListener, Event.Priority.Normal, this);
 	}
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args)
 	{
-		// Only triggered by console events, apparently...
-		log.info(Messaging.bracketize(name) + " OnCommand called with: " + cmd.getName());
+		//log.info(Messaging.bracketize(name) + " OnCommand called with: " + cmd.getName());
 		if (!wrapperMode)
 		{
 			boolean thisReturn;
-			thisReturn = this.l.onCommand(sender, cmd.getName(), commandLabel, args, "");
-			log.info(Messaging.bracketize(name) + " Command returning: " + (thisReturn? "True" : "False"));
+			thisReturn = this.playerListener.onCommand(sender, cmd.getName(), commandLabel, args, "");
+			//log.info(Messaging.bracketize(name) + " Command returning: " + (thisReturn? "True" : "False"));
 			return thisReturn;
 		}
 		else
@@ -119,12 +122,12 @@ public class DynamicMarket extends JavaPlugin
 			
 	public boolean wrapperCommand(CommandSender sender, Command cmd, String commandLabel, String[] args, String shopLabel)
 	{
-		return this.l.onCommand(sender, cmd.getName(), commandLabel, args, (shopLabel == null ? "" : shopLabel));
+		return this.playerListener.onCommand(sender, cmd.getName(), commandLabel, args, (shopLabel == null ? "" : shopLabel));
 	}
 	
 	public boolean wrapperCommand(CommandSender sender, String cmd, String commandLabel, String[] args, String shopLabel)
 	{
-		return this.l.onCommand(sender, cmd, commandLabel, args, (shopLabel == null ? "" : shopLabel));
+		return this.playerListener.onCommand(sender, cmd, commandLabel, args, (shopLabel == null ? "" : shopLabel));
 	}
  
 	public void setup()
