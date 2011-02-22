@@ -1,0 +1,26 @@
+[BasePrice]
+This is the baseline buying price for an item. The current buying and selling prices are based on this.
+This price is for one bundle, which contains the number of items in <bundleSize>. (Stored in the database in the "count" field)
+The BasePrice equals the buying price of 1 bundle at Stock = 0.
+
+[Stock]
+This is an integer representing the current stock level (in bundles).
+This can be interpreted as a "relative offset" of inventory, in which case Stock can be positive or negative, and indicates the amount over or under an "average" inventory level.
+This can also be interpreted as an "absolute count" of inventory, by setting StockLowest = 0. Either way, the following calculations work the same.
+
+[Volatility]
+This is a measure of how rapidly an item's price changes as the result of a change in the stock level.
+Corresponds to the percent increase in price per reduction of stock by 1 bundle, multiplied by 10,000.
+This value can range from 1 (-1 stock -> +0.01% price) to 10000 (-1 stock -> +100% price)
+
+[Inverse Volatility]
+This is a measure of how many bundles the stock level must be reduced by to double the current price.
+This is not actually stored internally, but is provided as a convenience; InverseVolatility is converted to Volatility on entry.
+This value can range from 1 (Volatility = 10000, -1 stock -> +100% price) to about 6900 (Volatility = 1, -6900 stock -> +100% price)
+
+[SalesTax]
+This is the difference between the current buying and selling prices for an item, expressed as a percentage scaled by 100.
+SellPrice = BuyPrice * (1 - (SalesTax / 100))
+So, if SalesTax = 0, SellPrice = BuyPrice.
+If SalesTax = 35, SellPrice = BuyPrice - 35% (or BuyPrice * 0.65).
+The SalesTax is applied after all other calculations involved in generating the BuyPrice.

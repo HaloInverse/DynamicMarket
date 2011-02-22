@@ -1,0 +1,47 @@
+items-db-path=
+    Path to the items.db file SimpleMarket will use to get initial item names. Default: "/Plugins/SimpleMarket/"
+shop-tag=
+    Default prefix for messages from the Shop plugin. (Not always used... will become more universal.)
+max-items-per-purchase=
+    Maximum number of items (not bundles) which can be purchased in a single transaction.
+max-items-per-sale=
+    Maximum number of items (not bundles) which can be sold in a single transaction.
+database-type=
+    Type of database used to store shop items.
+Valid values are "sqlite" (default) and "mysql".
+Anything other than "mysql" will be considered to be "sqlite".
+csv-file=
+    The file name of the .csv file used for shop database importing/exporting. (May have the shop label auto-prefixed to the name, if supplied by a wrapper plugin.)
+csv-file-path=
+    The path to the .csv file.
+simple-permissions=
+    If set to "true", then the Permissions plugin will not be used. Instead, DynamicMarket will assume that any commands
+coming from a logged-in player have "normal user" access ("list", "buy", "sell", "help", etc.), and any commands coming from the Bukkit console
+have "admin" access ("add", "update", "exportDB", etc.).
+text-colour-normal=
+text-colour-command=
+text-colour-bracket=
+text-colour-param=
+text-colour-error=
+    Sets the colour codes used for various text highlights. These are single-character strings in [0..9]|[a..f], without "&"s or other control characters.
+
+The following settings are only used if "database-type=mysql":
+mysql-db=
+    The database connection string for your MySQL database, if used. Default is "jdbc:mysql://localhost:3306/minecraft"
+mysql-user=
+    The user name used to connect to your MySQL database.
+mysql-pass=
+    The password used to connect to your MySQL database.
+mysql-dbengine=
+    The database engine used to create your MySQL database table.
+Recommended values are "MyISAM" (default) and "InnoDB".
+A good discussion of the differences can be found here.
+Only used when the shop database is created or reset.
+
+The following settings are used for integrating DynamicMarket with another plugin:
+wrapper-mode=
+    If set to "true", then DynamicMarket will not handle commands typed in by a player or from the console. Instead, it will expect
+commands to be passed in by another plugin, which serves as the "wrapper".
+wrapper-permissions=
+    If set to "true", then DynamicMarket will expect another plugin to register a permission handler with DynamicMarket.
+That plugin will then be able to handle any permission queries DynamicMarket needs to make. "simple-permissions=true" will override this.

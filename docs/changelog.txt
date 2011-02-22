@@ -1,0 +1,118 @@
+Changelog:
+
+TODO:
+
+    - Add market help to help subsystem.
+        - More details regarding price fluctuation mechanics.
+    - Add line-wrap routine to Messaging class.
+    - Item classes + permissions.
+        - Placeholder INT field 'class' added (default:0).
+    - Random fluctuations in stock levels.
+        - need property: jitterFreq (minutes)
+        - need field: INT jitterperc (% chance to jitter, 0-100)
+        - need to find out how to make a time-triggered java function
+    - Stock levels drift towards their rolling average, to smooth out price spikes.
+        - need property: driftFreq (minutes)
+        - need fields:
+            - INT driftout (% of stock to average into avgstock, 0-100)
+            - INT driftin (% of avgstock to average into stock, 0-100)
+            - INT avgstock (rolling average of stock level)
+    - Logging of transactions.
+    - Allow transaction money to go to/from an iConomy account (dummy, admin, or player-shop owner).
+
+0.4.5:
+    - Volatility can now go as low as 0.
+        - Stock can still be counted without affecting price.
+    - CSV import/export now uses +INF / -INF as shorthand for min/max values in applicable fields.
+    - Message colours now customizable in DynamicMarket.settings.
+    - Expanded help on tags/presets.
+    - Changed "fixed" tag, splitting its function with "flat".
+    - Added tag presets "flat" and "finite".
+    - Updated tag "renorm" to accept an optional new stock level other than 0.
+
+0.4.4:
+    - Added boolean property "simple-permissions" to ignore Permissions plugin.
+        - Shop commands (list, buy, sell) available to logged-in players.
+        - Admin commands (add, update, etc.) available from Bukkit console only.
+        - Takes precedence over "wrapper-permissions".
+    - Added boolean property "wrapper-mode" to disable standard onCommand handler.
+        - Commands handled through method in DynamicMarket.
+            public boolean wrapperCommand(CommandSender sender, Command cmd, String commandLabel, String[] args, String shopLabel)
+                - shopLabel: String containing name of shop. Default: ""
+                    Shop table name in DB: "Market"+shopLabel
+    - Added boolean property "wrapper-permissions" to pass permission requests to an external plugin.
+        - Permission handler must implement com.gmail.haloinverse.DynamicMarket.PermissionInterface.
+            public boolean permission(CommandSender thisSender, String permissionString);
+        - Setup code:
+            Plugin dynamicMarketPlugin = (DynamicMarket)(getServer().getPluginManager().getPlugin("DynamicMarket"));
+            dynamicMarketPlugin.permissionWrapper = <myPermissionHandler>;
+        - permissionString = same as DynamicMarket permissions, without the "dynamicmarket." prefix.
+
+0.4.3:
+    - Updated plugin namespace, with respect to recent lockout of org.bukkit.*/net.bukkit.* namespaces.
+    - Renamed plugin to DynamicMarket, as it's clearly moved past its simple origins.
+
+0.4.2:
+    - Fixed inverse volatility to volatility conversion.
+    - Improved .csv import/export.
+        - subType was not being imported/exported. Fixed.
+        - If a record matching the id/subtype already exists on import, updates the existing record instead of adding a new record.
+            - Blank fields will be preserved, non-blank fields will overwrite existing data.   
+
+0.4.1:
+    - Added .csv import/export to the shop DB.
+        - Commands: /shop exportdb, /shop importdb
+        - Property: csv-file (location of file)
+        - Restricted by "simplemarket.admin" permission.
+
+0.4a rev.5:
+Removed some wayward quotes in some SQL I had overlooked when building rev.2.
+Fixed a horrible error in the header-line-formatter that would crash the client if you tried to get help on a topic name more than four letters long.
+Added the appropriate class-paths for the MySQL and SQLite connectors to the SimpleMarket jar, now that I know how...did I mention I'm sort of a java n00b?
+This should remove the dependence on hacking the MANIFEST.MF files in CraftBukkit, or having Stats/Achievements installed.
+0.4a rev.4:
+Adjusted MarketItem string parser to make it more resistant to NullPointers produced by malformed tags in add/update commands.
+Added "float" tag to set StockFloor/StockCeiling to -inf/+inf. Basically, the opposite of the "fixed" tag.
+0.4a rev.3: Corrected a difference in SQL dialect between MySQL and SQLite.
+
+0.4a rev.2:
+Fixed some silly typos in the table-creation code, which had completely crippled 0.4a rev.1.
+Added config field "mysql-dbengine".
+
+0.4: Becoming a proper market.
+    - Price shifting based on shop stock offsets implemented.
+    - Shop commands (other than buy/sell) accessible from the Bukkit console.
+    - Database code fixed and improved.
+    - Database structure changed to handle market data.
+    - MarketItem object class created, to handle dynamically-priced items.
+        - Dynamic pricing equations finally sorted out.
+        - Input/change/display of MarketItems added.
+        - Tag system implemented to change properties of items in market.
+    - Added permission "simplemarket.access" to control access to base /shop command.
+    - Set location of items.db to a configurable property ("items-db-path"). Default: "plugins\SimpleMarket"
+    - Starting to replace hardcoded strings with fetchable strings, when possible. (i.e. "SimpleMarket" -> plugin.name())
+        - This will make fewer things break when names get changed.
+    - Adding records to the shop now checks if a matching record exists first.
+    - Sanity checks on input data performed when reading MarketItems from strings/DB.
+    - Adjusting a BundleSize on a shop item also adjusts its BasePrice accordingly.
+    - Item list can be filtered by partial name.
+    - Item name recognition falls back to partial-name recognition if there is no exact match.
+
+0.3: First public release.
+    - Database code made more generic.
+        - Error handler code refactored into SQLHandler class.
+    - Keyword-based help added.
+    - Functional item subclass support added.
+        - items.db file expanded.
+    - Database full-reset command added.
+
+0.2: More fixes and improvements.
+    - Migration of methods of new classes.
+        - ShopItem/ItemClump class added, to handle passing around chunks of item data.
+    - Error messages made more informative.
+    - Pruning unused code/variables from original code.
+    - Redundant code refactorized into reusable methods.
+    - Miscellaneous optimizations and rewrites.
+
+0.1: Project started.
+    - Repairing errors and incomplete sections of Nijikokun's SimpleShop code.

@@ -1,0 +1,90 @@
+Item Tags:
+
+(Note that item tags are applied in the order in which they are entered, and can override previous tags.
+"sc:15 fixed" results in sc=0, whereas "fixed sc:15" results in sc=15.)
+
+n | name
+    Renames an item. Persists until the item is removed.
+bp | BasePrice
+    Base purchase price of item (at stock=0).
+s | Stock
+    Current stock level of item. This is a relative value, as stock can be negative.
+    Consider stock=0 to be "baseline stock", rather than "no stock".
+cb | CanBuy
+    True (:t|y) if can be purchased, false (:f|n) if not
+cs | CanSell
+    True (:t|y) if can be sold, false (:f|n) if not
+buyok | !nobuy | canbuy
+    Synonyms for 'canbuy:y'
+!buyok | nobuy | !canbuy
+    Synonyms for 'canbuy:n'
+sellok | !nosell | cansell
+    Synonyms for 'cansell:y'
+!sellok | nosell | !cansell
+    Synonyms for 'cansell:n'
+v | vol | Volatility
+    Percent change in price per 1 stock bought/sold, * 10000.
+    Note that this is calculated per-item (or per-bundle), so compounding does take place.
+    Examples:
+    v:1 -> 100 items bought -> 1% price increase.
+    v:10 -> 100 items bought -> 10% price increase (10.51%, actually)
+    v:1000 -> 1 item bought -> 10% price increase; 10 items bought -> 159% price increase.
+    v:10000 -> 1 item bought -> 100% price increase.
+iv | ivol | InvVolatility
+    Number of items/bundles bought (sold) to double (halve) the price.
+    Converted to volatility on entry; sometimes more convenient to use.
+    Examples:
+    iv:1 -> 1 item bought -> 100% price increase.
+    iv:10 -> 10 items bought -> 100% price increase.
+    iv:6400 -> 6400 items bought -> 100% price increase.
+st | SalesTax
+    Difference between selling price and purchase price (at a given stock level). Range: 0..100
+    0 = (sellPrice = buyPrice); 25 = (sellPrice = buyPrice - 25%)
+    buyPrice * (1 - (salesTax/100)) = sellPrice
+sl | StockLowest
+    Minimum stock, past which purchases will fail. (Hard limit)
+    Purchases will be rejected if they would put stock below StockLowest.
+sh | StockHighest
+    Maximum stock at which sales will fail. (Hard limit)
+    Sales will be rejected if they would put stock above StockHighest.
+sf | StockFloor
+    Minimum stock level possible (Soft limit)
+    If a purchase puts stock below StockFloor, stock level will be reset to StockFloor.
+    Purchases below StockFloor will calculate prices as if stock = StockFloor. 
+sc | StockCeiling
+    Maximum stock level possible (Soft limit)
+    If a sale puts stock above StockCeiling, stock level will be reset to StockCeiling.
+    Sales above StockCeiling will calculate prices as if stock = StockCeiling. 
+pf | PriceFloor
+    Minimum purchase price of items (Soft limit)
+    Minimum selling price of items is calculated from this, less SalesTax.
+    Example: if SalesTax=50, PriceFloor=100, and currently calculated BuyPrice would be 75,
+       then BuyPrice=100 (PriceFloor limit) and SellPrice=50 (PriceFloor - SalesTax).
+pc | PriceCeiling
+    Maximum purchase price of items (Soft limit)
+    Minimum selling price of items is calculated from this, less SalesTax.
+    Example: if SalesTax=50, PriceCeiling=200, and currently calculated BuyPrice would be 350,
+       then BuyPrice->200 (PriceCeiling limit) and SellPrice->100 (PriceCeiling - SalesTax).
+fixed
+    Sets the item to have fixed pricing and untracked stock.
+    Stock level will remain at 0, whatever transactions take place.
+    Equivalent to s:0 sl:-INF sh:+INF sf:0 sc:0 v:0 pf:0 pc:+INF
+flat
+    Sets the item to have fixed pricing and tracked stock.
+    Price will not change due to stock level changes.
+    Stock level can float freely.
+    Equivalent to s:0 sl:-INF sh:+INF sf:-INF sc:+INF v:0 pf:0 pc:+INF 
+float
+    Sets the item to have floating pricing.
+    Stock level can float freely (positive and negative).
+    If volatility=0, volatility will be reset to 100.
+    Equivalent to sl:-INF sh:+INF sf:-INF sc:+INF (v=0? v:100) pf:0 pc:+INF
+finite
+    Sets the item to have dynamic pricing, but finite stock.
+    Buying will fail if stock level goes below 0.
+    Equivalent to sl:0 sh:+INF sf:-INF sc:+INF 
+renorm
+    Adjusts BasePrice to the current purchase price, and resets Stock to 0.
+    i.e. if Stock=15, BasePrice=<any>, and BuyPrice=130, renorm will set (Stock=0, BasePrice=130).
+    If a stock level is provided (i.e. renorm:50), Stock will be reset to the given level,
+    and BasePrice will be recalculated to make the current BuyPrice equal to the previous BuyPrice.
