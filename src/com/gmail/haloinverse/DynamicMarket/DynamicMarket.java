@@ -18,191 +18,189 @@ import org.bukkit.plugin.java.JavaPlugin;
  
 public class DynamicMarket extends JavaPlugin
 {
-/*  44 */   public final Logger log = Logger.getLogger("Minecraft");
+	public final Logger log = Logger.getLogger("Minecraft");
  
-/*  49 */   public String name; // = "SimpleMarket";
-/*  50 */   public String codename = "Caribou";
-/*  51 */   public String version; // = "0.4a";
+	public String name; // = "SimpleMarket";
+	public String codename = "Caribou";
+	public String version; // = "0.4a";
  
-/*  56 */   public iListen l = new iListen(this);
-   			public static Permissions Permissions;
-   			public static iProperty Settings;
-/*  76 */   public static String directory; // = "SimpleMarket" + File.separator;
-			public String shop_tag = "{BKT}[{}Shop{BKT}]{} ";
-			public String currency;// = "Coin";
-/*  78 */   public int max_per_purchase = 64;
-			public int max_per_sale = 64;
+	public iListen l = new iListen(this);
+	public static Permissions Permissions;
+	public static iProperty Settings;
+	public static String directory; // = "SimpleMarket" + File.separator;
+	public String shop_tag = "{BKT}[{}Shop{BKT}]{} ";
+	public String currency;// = "Coin";
+	public int max_per_purchase = 64;
+	public int max_per_sale = 64;
  
-			private String database_type = "sqlite";
-/*  85 */   public static String sqlite = "jdbc:sqlite:" + directory + "shop.db";
-/*  86 */   public static String mysql = "jdbc:mysql://localhost:3306/minecraft";
-/*  87 */   public static String mysql_user = "root";
-/*  88 */   public static String mysql_pass = "pass";
-			public static String mysql_dbEngine = "MyISAM";
-/*  89 */   public static Timer timer = null;
-			public static String csvFileName;
-			public static String csvFilePath;
-/*  90 */   public iConomy iC = null;
-			public Items items;
-			private String itemsPath = "";
-/* 100 */   public DatabaseMarket db = null;
-			public boolean wrapperMode = false;
-			public boolean wrapperPermissions = false;
-			public boolean simplePermissions = false;
-			public PermissionInterface permissionWrapper = null;
-			//public static YamlPropFile yamlPropTest;
+	private String database_type = "sqlite";
+	public static String sqlite = "jdbc:sqlite:" + directory + "shop.db";
+	public static String mysql = "jdbc:mysql://localhost:3306/minecraft";
+	public static String mysql_user = "root";
+	public static String mysql_pass = "pass";
+	public static String mysql_dbEngine = "MyISAM";
+	public static Timer timer = null;
+	public static String csvFileName;
+	public static String csvFilePath;
+	public iConomy iC = null;
+	public Items items;
+	private String itemsPath = "";
+	public DatabaseMarket db = null;
+	public boolean wrapperMode = false;
+	public boolean wrapperPermissions = false;
+	public boolean simplePermissions = false;
+	public PermissionInterface permissionWrapper = null;
+	//public static YamlPropFile yamlPropTest;
  
 			
-			public DynamicMarket(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
-				super(pluginLoader, instance, desc, folder, plugin, cLoader);
+	public DynamicMarket(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
+		super(pluginLoader, instance, desc, folder, plugin, cLoader);
 
-				// Moved to onEnable.
-     		//	folder.mkdir();
+		// Moved to onEnable.
+	//	folder.mkdir();
 
-			//  	name = desc.getName();
-			//  	version = desc.getVersion();
+	//  	name = desc.getName();
+	//  	version = desc.getVersion();
 
-	    	//	directory = getDataFolder() + File.separator;
-	    	//	sqlite = "jdbc:sqlite:" + directory + "shop.db";
-	 		
-	    		//registerEvents();
-	    		log.info(Messaging.bracketize(name) + " version " + Messaging.bracketize(version) + " (" + codename + ") loaded");
-			}
+	//	directory = getDataFolder() + File.separator;
+	//	sqlite = "jdbc:sqlite:" + directory + "shop.db";
+	
+		//registerEvents();
+		log.info(Messaging.bracketize(name) + " version " + Messaging.bracketize(version) + " (" + codename + ") loaded");
+	}
 			
  
-			public void onDisable() {
-				log.info(Messaging.bracketize(name) + " version " + Messaging.bracketize(version) + " (" + codename + ") disabled");
-			}
+	public void onDisable() {
+		log.info(Messaging.bracketize(name) + " version " + Messaging.bracketize(version) + " (" + codename + ") disabled");
+	}
  
-			@Override
-			public void onEnable() {
-				PluginDescriptionFile desc = getDescription();
-				getDataFolder().mkdir();
+	@Override
+	public void onEnable() {
+		PluginDescriptionFile desc = getDescription();
+		getDataFolder().mkdir();
 
-				name = desc.getName();
-	  		  	version = desc.getVersion();
+		name = desc.getName();
+	  	version = desc.getVersion();
  
-	  		  	directory = getDataFolder() + File.separator;
-	  		  	sqlite = "jdbc:sqlite:" + directory + "shop.db";
+	  	directory = getDataFolder() + File.separator;
+	  	sqlite = "jdbc:sqlite:" + directory + "shop.db";
 
-	  		  	registerEvents();
-	  		  	setup();
-	  		  	//setupItems(); //CHANGED: Initialisation moved to Items constructor.
-	  		  	setupCurrency();
-	  		  	setupPermissions();
-			  	log.info(Messaging.bracketize(name) + " version " + Messaging.bracketize(version) + " (" + codename + ") enabled");
-			}
+	  	registerEvents();
+	  	setup();
+	  	//setupItems(); //CHANGED: Initialisation moved to Items constructor.
+	  	setupCurrency();
+	  	setupPermissions();
+	  	log.info(Messaging.bracketize(name) + " version " + Messaging.bracketize(version) + " (" + codename + ") enabled");
+	}
  
-			private void registerEvents()
-			{
-				PluginManager thisPluginManager = getServer().getPluginManager();
-				//thisPluginManager.registerEvent(Event.Type.PLUGIN_ENABLE, this.l, Event.Priority.Normal, this);
-/* 126 */     	thisPluginManager.registerEvent(Event.Type.PLAYER_COMMAND, this.l, Event.Priority.Normal, this);
-			}
+	private void registerEvents()
+	{
+		PluginManager thisPluginManager = getServer().getPluginManager();
+		//thisPluginManager.registerEvent(Event.Type.PLUGIN_ENABLE, this.l, Event.Priority.Normal, this);
+		thisPluginManager.registerEvent(Event.Type.PLAYER_COMMAND, this.l, Event.Priority.Normal, this);
+	}
 
-			@Override
-			public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args)
-			{
-				// Only triggered by console events, apparently...
-				log.info(Messaging.bracketize(name) + " OnCommand called with: " + cmd.getName());
-				if (!wrapperMode)
-				{
-					boolean thisReturn;
-					thisReturn = this.l.onCommand(sender, cmd.getName(), commandLabel, args, "");
-					log.info(Messaging.bracketize(name) + " Command returning: " + (thisReturn? "True" : "False"));
-					return thisReturn;
-				}
-				else
-					return true;
-			}
+	@Override
+	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args)
+	{
+		// Only triggered by console events, apparently...
+		log.info(Messaging.bracketize(name) + " OnCommand called with: " + cmd.getName());
+		if (!wrapperMode)
+		{
+			boolean thisReturn;
+			thisReturn = this.l.onCommand(sender, cmd.getName(), commandLabel, args, "");
+			log.info(Messaging.bracketize(name) + " Command returning: " + (thisReturn? "True" : "False"));
+			return thisReturn;
+		}
+		else
+			return true;
+	}
 			
-			public boolean wrapperCommand(CommandSender sender, Command cmd, String commandLabel, String[] args, String shopLabel)
-			{
-				return this.l.onCommand(sender, cmd.getName(), commandLabel, args, (shopLabel == null ? "" : shopLabel));
-			}
-			
-			public boolean wrapperCommand(CommandSender sender, String cmd, String commandLabel, String[] args, String shopLabel)
-			{
-				return this.l.onCommand(sender, cmd, commandLabel, args, (shopLabel == null ? "" : shopLabel));
-			}
+	public boolean wrapperCommand(CommandSender sender, Command cmd, String commandLabel, String[] args, String shopLabel)
+	{
+		return this.l.onCommand(sender, cmd.getName(), commandLabel, args, (shopLabel == null ? "" : shopLabel));
+	}
+	
+	public boolean wrapperCommand(CommandSender sender, String cmd, String commandLabel, String[] args, String shopLabel)
+	{
+		return this.l.onCommand(sender, cmd, commandLabel, args, (shopLabel == null ? "" : shopLabel));
+	}
  
-			public void setup()
-			{
+	public void setup()
+	{
 
-/* 131 */     Settings = new iProperty(getDataFolder() + File.separator + name + ".settings");
-
-/* 132 */     //ItemsFile = new iProperty("items.db");
-			  itemsPath = Settings.getString("items-db-path", getDataFolder() + File.separator);
-			  items = new Items(itemsPath + "items.db", this);
+		Settings = new iProperty(getDataFolder() + File.separator + name + ".settings");
+	
+	    //ItemsFile = new iProperty("items.db");
+		itemsPath = Settings.getString("items-db-path", getDataFolder() + File.separator);
+		items = new Items(itemsPath + "items.db", this);
+	 
+	    shop_tag = Settings.getString("shop-tag", shop_tag);
+	    max_per_purchase = Settings.getInt("max-items-per-purchase", 64);
+	    max_per_sale = Settings.getInt("max-items-per-sale", 64);
  
-/* 135 */     shop_tag = Settings.getString("shop-tag", shop_tag);
-/* 136 */     max_per_purchase = Settings.getInt("max-items-per-purchase", 64);
-/* 137 */     max_per_sale = Settings.getInt("max-items-per-sale", 64);
+	    this.database_type = Settings.getString("database-type", "sqlite");
+	 
+	    mysql = Settings.getString("mysql-db", mysql);
+	    mysql_user = Settings.getString("mysql-user", mysql_user);
+	    mysql_pass = Settings.getString("mysql-pass", mysql_pass);
+	    mysql_dbEngine = Settings.getString("mysql-dbengine", mysql_dbEngine);
+	 
+		if (this.database_type.equalsIgnoreCase("mysql"))
+			db = new DatabaseMarket(DatabaseMarket.Type.MYSQL, "Market", items, mysql_dbEngine, this);
+		else
+			db = new DatabaseMarket(DatabaseMarket.Type.SQLITE, "Market", items, "", this);
+	
+		csvFileName = Settings.getString("csv-file", "shopDB.csv");
+		csvFilePath = Settings.getString("csv-file-path", getDataFolder() + File.separator);
+		wrapperMode = Settings.getBoolean("wrapper-mode", false);
+		simplePermissions = Settings.getBoolean("simple-permissions", false);
+		wrapperPermissions = Settings.getBoolean("wrapper-permissions", false);
+		  
+		Messaging.colNormal = "&" + Settings.getString("text-colour-normal", "e");
+		Messaging.colCmd = "&" + Settings.getString("text-colour-command", "f");
+		Messaging.colBracket = "&" + Settings.getString("text-colour-bracket", "d");
+		Messaging.colParam = "&" + Settings.getString("text-colour-param", "b");
+		Messaging.colError = "&" + Settings.getString("text-colour-error", "c");
+		
+		//yamlPropTest = new YamlPropFile(getDataFolder() + File.separator + "SimpleMarket.yml");
+		//yamlPropTest.load();
+	}
  
-/* 140 */     this.database_type = Settings.getString("database-type", "sqlite");
+	public void setupPermissions()
+	{
+		if (simplePermissions)
+		{	
+			Permissions = null;
+			log.info(Messaging.bracketize(name) + " Simple permission system active.");
+		}
+		else if (wrapperPermissions)
+			log.info(Messaging.bracketize(name) + " Permissions will be delegated to wrapper plugin.");
+		else
+		{
+			Plugin test = getServer().getPluginManager().getPlugin("Permissions");
  
-/* 143 */     mysql = Settings.getString("mysql-db", mysql);
-/* 144 */     mysql_user = Settings.getString("mysql-user", mysql_user);
-/* 145 */     mysql_pass = Settings.getString("mysql-pass", mysql_pass);
-			  mysql_dbEngine = Settings.getString("mysql-dbengine", mysql_dbEngine);
- 
-/* 148 */     if (this.database_type.equalsIgnoreCase("mysql"))
-/* 149 */       db = new DatabaseMarket(DatabaseMarket.Type.MYSQL, "Market", items, mysql_dbEngine, this);
-     		  else
-/* 151 */       db = new DatabaseMarket(DatabaseMarket.Type.SQLITE, "Market", items, "", this);
-
-			  csvFileName = Settings.getString("csv-file", "shopDB.csv");
-			  csvFilePath = Settings.getString("csv-file-path", getDataFolder() + File.separator);
-			  wrapperMode = Settings.getBoolean("wrapper-mode", false);
-			  simplePermissions = Settings.getBoolean("simple-permissions", false);
-			  wrapperPermissions = Settings.getBoolean("wrapper-permissions", false);
-			  
-			  Messaging.colNormal = "&" + Settings.getString("text-colour-normal", "e");
-			  Messaging.colCmd = "&" + Settings.getString("text-colour-command", "f");
-			  Messaging.colBracket = "&" + Settings.getString("text-colour-bracket", "d");
-			  Messaging.colParam = "&" + Settings.getString("text-colour-param", "b");
-			  Messaging.colError = "&" + Settings.getString("text-colour-error", "c");
-
-			  //yamlPropTest = new YamlPropFile(getDataFolder() + File.separator + "SimpleMarket.yml");
-			  //yamlPropTest.load();
-			}
- 
-			public void setupPermissions()
-			{
-				if (simplePermissions)
-				{	
-					Permissions = null;
-					log.info(Messaging.bracketize(name) + " Simple permission system active.");
-				}
-				else if (wrapperPermissions)
-					log.info(Messaging.bracketize(name) + " Permissions will be delegated to wrapper plugin.");
-				else
-				{
-/* 156 */     		Plugin test = getServer().getPluginManager().getPlugin("Permissions");
- 
-/* 158 */     		if (Permissions == null)
-/* 159 */       		if (test != null) {
-/* 160 */         			Permissions = (Permissions)test;
+     		if (Permissions == null)
+       		if (test != null) {
+         			Permissions = (Permissions)test;
 							log.info(Messaging.bracketize(name) + " Standard Permission plugin enabled.");
-       					} else {
-/* 162 */         			log.info(Messaging.bracketize(name) + " Permission system not enabled. Disabling plugin.");
-/* 163 */         			getServer().getPluginManager().disablePlugin(this);
-       					}	
-				}
-			}
+			} else {
+				log.info(Messaging.bracketize(name) + " Permission system not enabled. Disabling plugin.");
+				getServer().getPluginManager().disablePlugin(this);
+			}	
+		}
+	}
  
-
+	public void setupCurrency()
+	{
+		Plugin test = getServer().getPluginManager().getPlugin("iConomy");
  
-			public void setupCurrency()
-			{
-/* 188 */     Plugin test = getServer().getPluginManager().getPlugin("iConomy");
- 
-/* 190 */     if (test != null) {
-/* 191 */       	iC = (iConomy)test;
-/* 192 */       	currency = iConomy.currency;
-     		  } else {
-/* 194 */       	log.info(Messaging.bracketize(name) + " iConomy is not loaded. Disabling plugin.");
-/* 195 */       	getPluginLoader().disablePlugin(this);
-     		  }
-			}
+		if (test != null) {
+			iC = (iConomy)test;
+			currency = iConomy.currency;
+     	} else {
+     		log.info(Messaging.bracketize(name) + " iConomy is not loaded. Disabling plugin.");
+     		getPluginLoader().disablePlugin(this);
+     	}
+	}
 }
