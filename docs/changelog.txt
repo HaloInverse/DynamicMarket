@@ -17,8 +17,21 @@ TODO:
             - INT driftout (% of stock to average into avgstock, 0-100)
             - INT driftin (% of avgstock to average into stock, 0-100)
             - INT avgstock (rolling average of stock level)
-    - Logging of transactions.
-    - Allow transaction money to go to/from an iConomy account (dummy, admin, or player-shop owner).
+    - Support for "item id" "all" to allow for global editing of data by command.
+        - Supply data object + mask object to MarketDatabase.
+    - Threading of tasks when applicable.
+    - Auto-transactions triggered by market condition/timer.
+
+0.4.6:
+    - Support for transaction funds to be backed by an iConomy account.
+        - setting default-shop-account= iConomy account to send/receive money to.
+        - setting default-shop-account-free= if False, <default-shop-account> will reject transactions if it would fall below 0.
+        - Parameters added to wrapper-call messages.
+    - Wrapper calls streamlined.
+    - Added transaction logging.
+        - setting transaction-log-file= File name for logging transactions.
+        - setting transaction-log-autoflush= Finish writing log file after every transaction (=true, more crash-resistant)
+              or when shutting down (=false, more efficient)  
 
 0.4.5:
     - Volatility can now go as low as 0.
@@ -26,6 +39,7 @@ TODO:
     - CSV import/export now uses +INF / -INF as shorthand for min/max values in applicable fields.
     - Message colours now customizable in DynamicMarket.settings.
     - Expanded help on tags/presets.
+        - Individual tags/presets have their own help node under "/shop help tag <tagName>".
     - Changed "fixed" tag, splitting its function with "flat".
     - Added tag presets "flat" and "finite".
     - Updated tag "renorm" to accept an optional new stock level other than 0.

@@ -2,9 +2,9 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
-	<classpathentry kind="lib" path="/media/sda1/Users/Jason/workspace/ExternalJARs/bukkit-0.0.1-SNAPSHOT-j400.jar"/>
+	<classpathentry kind="lib" path="/media/sda1/Users/Jason/workspace/ExternalJARs/bukkit-0.0.1-SNAPSHOT-409.jar"/>
 	<classpathentry kind="lib" path="/media/sda1/Users/Jason/workspace/ExternalJARs/iConomy.jar"/>
 	<classpathentry kind="lib" path="/media/sda1/Users/Jason/workspace/ExternalJARs/Permissions.jar"/>
-	<classpathentry kind="lib" path="/media/sda1/Users/Jason/workspace/ExternalJARs/craftbukkit-0.0.1-SNAPSHOT-409.jar"/>
+	<classpathentry kind="lib" path="/media/sda1/Users/Jason/workspace/ExternalJARs/craftbukkit-0.0.1-SNAPSHOT-424.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

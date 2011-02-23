@@ -53,6 +53,9 @@ public class DynamicMarket extends JavaPlugin
 	public boolean wrapperPermissions = false;
 	public boolean simplePermissions = false;
 	public PermissionInterface permissionWrapper = null;
+	public TransactionLogger transLog = null;
+	public String transLogFile = "transactions.log";
+	public boolean transLogAutoFlush = false;
 	//public static YamlPropFile yamlPropTest;
  
 			
@@ -176,6 +179,13 @@ public class DynamicMarket extends JavaPlugin
 		
 		defaultShopAccount = Settings.getString("default-shop-account", "");
 		defaultShopAccountFree = Settings.getBoolean("default-shop-account-free", defaultShopAccountFree);
+		
+		transLogFile = Settings.getString("transaction-log-file", transLogFile);
+		transLogAutoFlush = Settings.getBoolean("transaction-log-autoflush", transLogAutoFlush);
+		if ((transLogFile != null) && (!transLogFile.isEmpty()))
+			transLog = new TransactionLogger(this, getDataFolder() + File.separator + transLogFile, transLogAutoFlush);
+		else
+			transLog = new TransactionLogger(this, null, false);
 		
 		//yamlPropTest = new YamlPropFile(getDataFolder() + File.separator + "SimpleMarket.yml");
 		//yamlPropTest.load();

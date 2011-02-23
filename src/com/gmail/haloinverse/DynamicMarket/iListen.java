@@ -434,11 +434,11 @@ public class iListen extends PlayerListener
 		return 0;
 	}
  
-	private void set_balance(String name, int amount)
-	{
-		if ((name != null) && (!name.isEmpty()))
-			iConomy.db.set_balance(name, amount);
-	}
+	//private void set_balance(String name, int amount)
+	//{
+	//	if ((name != null) && (!name.isEmpty()))
+	//		iConomy.db.set_balance(name, amount);
+	//}
  
 	private void show_balance(Player player)
 	{
@@ -547,6 +547,9 @@ public class iListen extends PlayerListener
 
 		message.send(plugin.shop_tag + "Purchased {BKT}[{PRM}" + data.formatBundleCount(requested.count) + "{BKT}]{PRM} " + data.getName() + "{} for {PRM}" + transValue + " " + iConomy.currency);
 		show_balance(player);
+		if (plugin.transLog.isOK)
+			plugin.transLog.logTransaction(player.getName() + ", Buy, " + (-requested.count) + ", " + data.count + ", " + data.getName() + ", " + 
+				data.itemId + ", " + data.subType + ", " + transValue + ", " + (shopLabel==null?"":shopLabel) + ", " + (accountName==null?"":accountName));
 		return true;
 	}
 	
@@ -616,6 +619,9 @@ public class iListen extends PlayerListener
 
 		message.send(plugin.shop_tag + "Sold {BKT}[{PRM}" + data.formatBundleCount(requested.count) + "{BKT}]{PRM} " + data.getName() + "{} for {PRM}" + transValue + " " + iConomy.currency);
 		show_balance(player);
+		if (plugin.transLog.isOK)
+			plugin.transLog.logTransaction(player.getName() + ", Sell, " + requested.count + ", " + data.count + ", " + data.getName() + ", " + 
+				data.itemId + ", " + data.subType + ", " + (-transValue) + ", " + (shopLabel==null?"":shopLabel) + ", " + (accountName==null?"":accountName));
 		return true;
 	}
 			
