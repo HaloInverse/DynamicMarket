@@ -429,8 +429,15 @@ public class iListen extends PlayerListener
 		 
 	private int get_balance(String name)
 	{
-		if ((name != null) && (!name.isEmpty()))		
+		if ((name != null) && (!name.isEmpty()))
+		{
+			//plugin.log.info(Messaging.bracketize(name) + "GetBalance: " + name + ":" + (int)iConomy.Bank.getAccount(name).getBalance());
+			//return (int)iConomy.Bank.getAccount(name).getBalance();
 			return iConomy.db.get_balance(name);
+			//plugin.log.info(Messaging.bracketize(name) + "GetBalance: " + name + ":" + iConomy.database.getBalance(name));
+			//return (int)iConomy.database.getBalance(name);
+		}
+		//plugin.log.info(Messaging.bracketize(name) + "GetBalance: (none):0");
 		return 0;
 	}
  
@@ -440,15 +447,22 @@ public class iListen extends PlayerListener
 	//		iConomy.db.set_balance(name, amount);
 	//}
  
-	private void show_balance(Player player)
+	private void show_balance(Player player, Messaging message)
 	{
-		plugin.iC.l.showBalance(player.getName(), player, true);
+		//plugin.iC.l.showBalance(player.getName(), player, true);
+		int thisBalance = get_balance(player.getName());
+		message.send("{} Balance: {PRM}" + thisBalance + " " + iConomy.currency + (Math.abs(thisBalance)==1? "" : "s"));
 	}
    
 	private void delta_balance(String name, int amount)
 	{
 		if ((name != null) && (!name.isEmpty()))
-			iConomy.db.set_balance(name, iConomy.db.get_balance(name) + amount);
+		{
+			//plugin.log.info(Messaging.bracketize(name) + "GetBalance: " + name + ":" + iConomy.database.getBalance(name));
+			//plugin.log.info(Messaging.bracketize(name) + "SetBalance: " + name + ":" + (iConomy.database.getBalance(name) + amount));
+			//iConomy.Bank.updateAccount(name, iConomy.Bank.getAccount(name).getBalance() + amount);
+			iConomy.db.set_balance(name, get_balance(name) + amount);
+		}
 	}
 
 	private boolean shopShowItemInfo(String itemString, Messaging message, boolean fullInfo, String shopLabel)
@@ -546,7 +560,7 @@ public class iListen extends PlayerListener
 		plugin.db.removeStock(requested, shopLabel);
 
 		message.send(plugin.shop_tag + "Purchased {BKT}[{PRM}" + data.formatBundleCount(requested.count) + "{BKT}]{PRM} " + data.getName() + "{} for {PRM}" + transValue + " " + iConomy.currency);
-		show_balance(player);
+		show_balance(player, message);
 		if (plugin.transLog.isOK)
 			plugin.transLog.logTransaction(player.getName() + ", Buy, " + (-requested.count) + ", " + data.count + ", " + data.getName() + ", " + 
 				data.itemId + ", " + data.subType + ", " + transValue + ", " + (shopLabel==null?"":shopLabel) + ", " + (accountName==null?"":accountName));
@@ -618,7 +632,7 @@ public class iListen extends PlayerListener
 		plugin.db.addStock(requested, shopLabel);
 
 		message.send(plugin.shop_tag + "Sold {BKT}[{PRM}" + data.formatBundleCount(requested.count) + "{BKT}]{PRM} " + data.getName() + "{} for {PRM}" + transValue + " " + iConomy.currency);
-		show_balance(player);
+		show_balance(player, message);
 		if (plugin.transLog.isOK)
 			plugin.transLog.logTransaction(player.getName() + ", Sell, " + requested.count + ", " + data.count + ", " + data.getName() + ", " + 
 				data.itemId + ", " + data.subType + ", " + (-transValue) + ", " + (shopLabel==null?"":shopLabel) + ", " + (accountName==null?"":accountName));
@@ -779,9 +793,13 @@ public class iListen extends PlayerListener
 		return false;
 	}
 
+
 	public void onPlayerCommand(PlayerChatEvent event)
 	{
 		// Is this truly deprecated or not?
+		// Receives commands from OTHER plugins...
+		// but /shop seems to be handled through DynamicMarket.onCommand.
+		//TODO: Test further.
 		plugin.log.info("OnPlayerCommand called with: " + event.getMessage());
 		String base;
 		String[] args;
@@ -804,6 +822,7 @@ public class iListen extends PlayerListener
 			// event.setCancelled(true)?
 		}
 	}
+
 	
 	public boolean onCommand(CommandSender sender, String cmd, String commandLabel, String[] args, String shopLabel) 	
 	{
