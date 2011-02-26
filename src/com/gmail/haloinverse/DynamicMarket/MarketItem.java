@@ -60,7 +60,6 @@ public class MarketItem extends ItemClump {
 	 * 
 	 */
 	
-	
 	public MarketItem(String thisShopLabel) 
 	{
 		// Default constructor with no parameters.
@@ -451,17 +450,22 @@ public class MarketItem extends ItemClump {
 		priceCeil = Integer.MAX_VALUE;
 	}
 	
+
+	
+	
+	
+	
 	//public int sellPrice()
 	//{
 	//	return (rangeCrop(Math.round(basePrice * (1 - (salesTax / 100))), priceFloor, priceCeil));
 	//}
 	
-	public int rangeCrop(int value, int minVal, int maxVal)
+	private int rangeCrop(int value, int minVal, int maxVal)
 	{
 		return (Math.min(Math.max(value, minVal), maxVal));
 	}
 	
-	public double rangeCrop(double value, double minVal, double maxVal)
+	private double rangeCrop(double value, double minVal, double maxVal)
 	{
 		return (Math.min(Math.max(value, minVal), maxVal));
 	}
@@ -650,6 +654,7 @@ public class MarketItem extends ItemClump {
 			return ("{PRM}"+getName() + "{ERR} has only {PRM}" + formatBundleCount(leftToBuy()) + " {ERR}left for sale.");
 		// Display count as [<bundle>(x<numbundles>)]
 		return ("{}Buy: {BKT}[{PRM}" + formatBundleCount(numBundles) + "{BKT}]{} for {PRM}" + getBuyPrice(numBundles) + " " + iConomy.currency);
+		//TODO: Abstract currency name from iConomy reference.
 	}
 	
 	public String infoStringSell(int numBundles)
@@ -664,6 +669,7 @@ public class MarketItem extends ItemClump {
 			return ("{PRM}"+getName() + "{ERR} is overstocked, only {PRM}" + formatBundleCount(leftToSell()) + " {ERR}can be sold.");
 		// Display count as [<bundle>(x<numbundles>)]
 		return ("{}Sell: {BKT}[{PRM}" + formatBundleCount(numBundles) + "{BKT}]{} for {PRM}" + getSellPrice(numBundles) + " " + iConomy.currency);
+		//TODO: Abstract currency name from iConomy reference.
 	}
 
 	public int leftToBuy()
@@ -774,7 +780,7 @@ public class MarketItem extends ItemClump {
 		}
 	}
 	
-	public MarketItem(String csvString, MarketItem defaults, boolean isCSV)
+	public MarketItem(String csvString, MarketItem defaults, String shopLabel, boolean isCSV)
 	{
 		super();
 		
@@ -853,7 +859,56 @@ public class MarketItem extends ItemClump {
 			avgStock = quickParse(inputParams[19]);
 		if (!inputParams[20].isEmpty())
 			itemClass = quickParse(inputParams[20]);
+		this.shopLabel = shopLabel; 
 		sanityCheck();
+	}
+	
+	public void setEmptyMask()
+	{
+		// Wipes all fields to prepare this MarketItem to be used as a data mask.
+		this.name = null;
+		this.basePrice = 0;
+		this.stock = 0;
+		this.canBuy = false;
+		this.canSell = false;
+		this.volatility = 0;
+		this.salesTax = 0;
+		this.stockLowest = 0;
+		this.stockHighest = 0;
+		this.stockFloor = 0;
+		this.stockCeil = 0;
+		this.priceFloor = 0;
+		this.priceCeil = 0;
+		this.jitterPerc = 0;
+		this.driftOut = 0;
+		this.driftIn = 0;
+		this.avgStock = 0;
+		this.itemClass = 0;
+		this.shopLabel = null;
+	}
+	
+	public void copyMasked(MarketItem data, MarketItem mask)
+	{
+		// Copies in the fields from data, for only the fields set non-zero/non-null/true in mask.
+		if (mask.name != null) 		this.name = data.name;
+		if (mask.basePrice != 0) 	this.basePrice = data.basePrice;
+		if (mask.stock != 0) 		this.stock = data.stock;
+		if (mask.canBuy) 			this.canBuy = data.canBuy;
+		if (mask.canSell) 			this.canSell = data.canSell;
+		if (mask.volatility != 0) 	this.volatility = data.volatility;
+		if (mask.salesTax != 0) 	this.salesTax = data.salesTax;
+		if (mask.stockLowest != 0) 	this.stockLowest = data.stockLowest;
+		if (mask.stockHighest != 0) this.stockHighest = data.stockHighest;
+		if (mask.stockFloor != 0) 	this.stockFloor = data.stockFloor;
+		if (mask.stockCeil != 0) 	this.stockCeil = data.stockCeil;
+		if (mask.priceFloor != 0) 	this.priceFloor = data.priceFloor;
+		if (mask.priceCeil != 0) 	this.priceCeil = data.priceCeil;
+		if (mask.jitterPerc != 0) 	this.jitterPerc = data.jitterPerc;
+		if (mask.driftOut != 0) 	this.driftOut = data.driftOut;
+		if (mask.driftIn != 0) 		this.driftIn = data.driftIn;
+		if (mask.avgStock != 0) 	this.avgStock = data.avgStock;
+		if (mask.itemClass != 0) 	this.itemClass = data.itemClass;
+		if (mask.shopLabel != null) this.shopLabel = data.shopLabel;
 	}
 
 }
