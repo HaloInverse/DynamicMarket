@@ -1,7 +1,12 @@
 package com.gmail.haloinverse.DynamicMarket;
 
+import com.gmail.haloinverse.DynamicMarket.DynamicMarket.EconType;
+
+//import com.haloinverse.AnyConomy.Exceptions.*;
+
 import com.nijikokun.bukkit.Permissions.Permissions;
 import com.nijikokun.bukkit.iConomy.iConomy;
+import com.nijikokun.bukkit.iConomy.Account;
 import java.util.ArrayList;
 //import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -13,13 +18,14 @@ import org.bukkit.inventory.ItemStack;
 
 public class iListen extends PlayerListener
 {
+	
 	public static DynamicMarket plugin;
 	
 	public iListen(DynamicMarket instance)
 	{
 		plugin = instance;
 	}
-
+	
 	private boolean hasPermission(CommandSender sender, String permString)
 	{
 		if (plugin.simplePermissions)
@@ -429,11 +435,43 @@ public class iListen extends PlayerListener
 		 
 	private int get_balance(String name)
 	{
+		if (!plugin.econLoaded)
+			return 0;
 		if ((name != null) && (!name.isEmpty()))
 		{
+			//if (plugin.econType == EconType.ICONOMY2)
+			//	return iConomy.db.get_balance(name);
+			if (plugin.econType == EconType.ICONOMY3)
+				return (int)iConomy.Bank.getAccount(name).getBalance();
+			
+			/*
+			if (plugin.econType == EconType.ANYCONOMY)
+				try {
+					return (int)plugin.anyConomy.getBalance(name);
+				} catch (InternalEconException e) {
+					plugin.log.severe(Messaging.bracketize(plugin.name) + " Internal Economy Error Getting Balance for '" + name + "': " + e);
+					return 0;
+				} catch (NoAccountException e) {
+					try {
+						plugin.anyConomy.createAccount(name);
+					} catch (NoEconRegisteredException e1) {
+						plugin.log.severe(Messaging.bracketize(plugin.name) + " Transaction before economy registered: " + e1);
+						return 0;
+					} catch (InternalEconException e1) {
+						plugin.log.severe(Messaging.bracketize(plugin.name) + " Internal Economy Error Creating Account '" + name + "': " + e1);
+						return 0;
+					} catch (AccountExistsException e1) {
+						plugin.log.severe(Messaging.bracketize(plugin.name) + " Inconsistent NoAccount/AccountExists Errors for '" + name + "': " + e1);
+						return 0;
+					}
+				} catch (NoEconRegisteredException e) {
+					plugin.log.severe(Messaging.bracketize(plugin.name) + " Transaction before economy registered: " + e);
+					return 0;
+				}
+			*/
+			
 			//plugin.log.info(Messaging.bracketize(name) + "GetBalance: " + name + ":" + (int)iConomy.Bank.getAccount(name).getBalance());
 			//return (int)iConomy.Bank.getAccount(name).getBalance();
-			return iConomy.db.get_balance(name);
 			//plugin.log.info(Messaging.bracketize(name) + "GetBalance: " + name + ":" + iConomy.database.getBalance(name));
 			//return (int)iConomy.database.getBalance(name);
 		}
@@ -451,17 +489,55 @@ public class iListen extends PlayerListener
 	{
 		//plugin.iC.l.showBalance(player.getName(), player, true);
 		int thisBalance = get_balance(player.getName());
-		message.send("{} Balance: {PRM}" + thisBalance + " " + iConomy.currency + (Math.abs(thisBalance)==1? "" : "s"));
+		message.send("{} Balance: {PRM}" + thisBalance + " " + getCurrencyName(thisBalance) + (Math.abs(thisBalance)==1? "" : "s"));
 	}
    
-	private void delta_balance(String name, int amount)
+	private void delta_balance(String name, int amount) //throws InvalidTransactionException
 	{
+		if (!plugin.econLoaded)
+			return;
 		if ((name != null) && (!name.isEmpty()))
 		{
 			//plugin.log.info(Messaging.bracketize(name) + "GetBalance: " + name + ":" + iConomy.database.getBalance(name));
 			//plugin.log.info(Messaging.bracketize(name) + "SetBalance: " + name + ":" + (iConomy.database.getBalance(name) + amount));
 			//iConomy.Bank.updateAccount(name, iConomy.Bank.getAccount(name).getBalance() + amount);
-			iConomy.db.set_balance(name, get_balance(name) + amount);
+			//if (plugin.econType == EconType.ICONOMY2)
+			//	iConomy.db.set_balance(name, get_balance(name) + amount);
+			if (plugin.econType == EconType.ICONOMY3)
+			{
+				Account thisAccount = iConomy.Bank.getAccount(name); 
+				thisAccount.add(amount);
+				thisAccount.save();
+			}
+			
+			/*
+			else if (plugin.econType == EconType.ANYCONOMY)
+			{
+				try {
+					plugin.anyConomy.addBalance(name, amount);
+				} catch (InternalEconException e) {
+					plugin.log.severe(Messaging.bracketize(plugin.name) + " Internal Economy Error Performing Transaction for '" + name + "': " + e);
+					return;
+				} catch (NoAccountException e) {
+					try {
+						plugin.anyConomy.createAccount(name);
+					} catch (NoEconRegisteredException e1) {
+						plugin.log.severe(Messaging.bracketize(plugin.name) + " Transaction before economy registered: " + e1);
+						return;
+					} catch (InternalEconException e1) {
+						plugin.log.severe(Messaging.bracketize(plugin.name) + " Internal Economy Error Creating Account '" + name + "': " + e1);
+						return;
+					} catch (AccountExistsException e1) {
+						plugin.log.severe(Messaging.bracketize(plugin.name) + " Inconsistent NoAccount/AccountExists Errors for '" + name + "': " + e1);
+						return;
+					}
+				} catch (NoEconRegisteredException e) {
+					plugin.log.severe(Messaging.bracketize(plugin.name) + " Transaction before economy registered: " + e);
+					return;
+				}
+			}
+			*/
+			
 		}
 	}
 
@@ -546,20 +622,40 @@ public class iListen extends PlayerListener
 		//if (balance < data.buy * requested.count) {
 		if (balance < transValue)
 		{
-			message.send(plugin.shop_tag + "{ERR}You do not have enough " + plugin.currency + " to do this.");
+			message.send(plugin.shop_tag + "{ERR}You do not have enough " + getCurrencyNamePlural() + " to do this.");
 			message.send(data.infoStringBuy(requested.count));
 			return false;
 		}
  
-		//set_balance(player.getName(), balance - (data.buy * requested.count));
-		delta_balance(player.getName(), -transValue);
-		delta_balance(accountName, transValue);
+		//delta_balance(player.getName(), -transValue);
+		//delta_balance(accountName, transValue);
+		
+		
+		//try {
+			delta_balance(player.getName(), -transValue);
+		//} catch (InvalidTransactionException e) {
+		//	message.send(plugin.shop_tag + "{ERR}Transaction rejected by economy system.");
+		//	return false;
+		//}
+		//try {
+			delta_balance(accountName, transValue);
+		//} catch (InvalidTransactionException e) {
+		//	message.send(plugin.shop_tag + "{ERR}Transaction rejected by economy system.");
+		//	try {
+		//		// Roll back previous transaction.
+		//		delta_balance(player.getName(), transValue);
+		//	} catch (InvalidTransactionException e1) {
+		//		plugin.log.severe(Messaging.bracketize(plugin.name) + " Could not roll back '" + player.getName() + "' after invalid transaction with '" + accountName + "': " + e1);
+		//		return false;
+		//	}
+		//}
+		
 
 		player.getInventory().addItem(new ItemStack[] { new ItemStack(data.itemId, requested.count * data.count, (short) 0, (byte)requested.subType) });
 		
 		plugin.db.removeStock(requested, shopLabel);
 
-		message.send(plugin.shop_tag + "Purchased {BKT}[{PRM}" + data.formatBundleCount(requested.count) + "{BKT}]{PRM} " + data.getName() + "{} for {PRM}" + transValue + " " + iConomy.currency);
+		message.send(plugin.shop_tag + "Purchased {BKT}[{PRM}" + data.formatBundleCount(requested.count) + "{BKT}]{PRM} " + data.getName() + "{} for {PRM}" + transValue + " " + getCurrencyName(transValue));
 		show_balance(player, message);
 		if (plugin.transLog.isOK)
 			plugin.transLog.logTransaction(player.getName() + ", Buy, " + (-requested.count) + ", " + data.count + ", " + data.getName() + ", " + 
@@ -619,19 +715,41 @@ public class iListen extends PlayerListener
 		{
 			if (get_balance(accountName) < transValue)
 			{
-				message.send(plugin.shop_tag + "{ERR}Shop account does not have enough " + iConomy.currency + " to pay for " + data.formatBundleCount(requested.count) +" "+data.getName()+".");
+				message.send(plugin.shop_tag + "{ERR}Shop account does not have enough " + getCurrencyNamePlural() + " to pay for " + data.formatBundleCount(requested.count) +" "+data.getName()+".");
 				return false;
 			}	
 		}
 		
 		plugin.items.remove(player, data, requested.count);
 
-		//set_balance(player.getName(), balance + data.sell * requested.count);
-		delta_balance(player.getName(), transValue);
-		delta_balance(accountName, -transValue);
+		
+		//delta_balance(player.getName(), transValue);
+		//delta_balance(accountName, -transValue);
+		
+		
+		//try {
+			delta_balance(player.getName(), transValue);
+		//} catch (InvalidTransactionException e) {
+		//	message.send(plugin.shop_tag + "{ERR}Transaction rejected by economy system.");
+		//	return false;
+		//}
+		//try {
+			delta_balance(accountName, -transValue);
+		//} catch (InvalidTransactionException e) {
+		//	message.send(plugin.shop_tag + "{ERR}Transaction rejected by economy system.");
+		//	try {
+				// Roll back previous transaction.
+		//		delta_balance(player.getName(), -transValue);
+		//	} catch (InvalidTransactionException e1) {
+		//		plugin.log.severe(Messaging.bracketize(plugin.name) + " Could not roll back '" + player.getName() + "' after invalid transaction with '" + accountName + "': " + e1);
+		//		return false;
+		//	}
+		//}
+		
+		
 		plugin.db.addStock(requested, shopLabel);
 
-		message.send(plugin.shop_tag + "Sold {BKT}[{PRM}" + data.formatBundleCount(requested.count) + "{BKT}]{PRM} " + data.getName() + "{} for {PRM}" + transValue + " " + iConomy.currency);
+		message.send(plugin.shop_tag + "Sold {BKT}[{PRM}" + data.formatBundleCount(requested.count) + "{BKT}]{PRM} " + data.getName() + "{} for {PRM}" + transValue + " " + getCurrencyName(transValue));
 		show_balance(player, message);
 		if (plugin.transLog.isOK)
 			plugin.transLog.logTransaction(player.getName() + ", Sell, " + requested.count + ", " + data.count + ", " + data.getName() + ", " + 
@@ -800,7 +918,7 @@ public class iListen extends PlayerListener
 		// Receives commands from OTHER plugins...
 		// but /shop seems to be handled through DynamicMarket.onCommand.
 		//TODO: Test further.
-		plugin.log.info("OnPlayerCommand called with: " + event.getMessage());
+		//plugin.log.info("OnPlayerCommand called with: " + event.getMessage());
 		String base;
 		String[] args;
 		String[] msg = event.getMessage().split(" ",2);
@@ -1059,4 +1177,55 @@ public class iListen extends PlayerListener
 		// "/shop" not matched.
 		return false;
 	}
+	
+	public String getCurrencyName()
+	{
+		if (plugin.econType == EconType.ICONOMY3)
+		{
+			return plugin.currency;
+		}
+		
+		/*
+		else if (plugin.econType == EconType.ANYCONOMY)
+		{
+			try {
+				return plugin.anyConomy.getEconomyCurrencyName();
+			} catch (NoEconRegisteredException e) {
+				plugin.log.warning(Messaging.bracketize(plugin.name) + " Currency name fetched before economy registered.");
+				return "<currency>";
+			}
+		}
+		*/
+		else
+			return "<currency>";
+	}
+	
+	public String getCurrencyNamePlural()
+	{
+		if (plugin.econType == EconType.ICONOMY3)
+		{
+			return plugin.currency + "s";
+		}
+		
+		/*
+		else if (plugin.econType == EconType.ANYCONOMY)
+		{
+			try {
+				return plugin.anyConomy.getEconomyCurrencyNamePlural();
+			} catch (NoEconRegisteredException e) {
+				plugin.log.warning(Messaging.bracketize(plugin.name) + " Currency name fetched before economy registered.");
+				return "<currencys>";
+			}
+		}
+		*/
+		else
+			return "<currencys>";
+	}
+	
+	public String getCurrencyName(int amountOfCurrency)
+	{
+		// Switches pluralization depending on quantity.
+		return (Math.abs(amountOfCurrency)==1?getCurrencyName():getCurrencyNamePlural());
+	}
+	
 }

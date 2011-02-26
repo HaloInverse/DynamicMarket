@@ -21,6 +21,19 @@ TODO:
         - Supply data object + mask object to MarketDatabase.
     - Threading of tasks when applicable.
     - Auto-transactions triggered by market condition/timer.
+    
+
+    
+0.4.7.1:
+    - The beginnings of multi-economy support.
+    - Works, but not graceful or easy. Rolled back until my Java-Fu improves.
+    
+0.4.7:
+    - Updated iConomy support for newer versions.
+    - Added setting: economy-type=
+        - Values: iConomy3, AnyConomy
+    - Removed support for iConomy 2.1.
+        - Incompatible namespace references between iConomy 2.1 and iConomy 3. It's one-or-the-other now.
 
 0.4.6:
     - Support for transaction funds to be backed by an iConomy account.

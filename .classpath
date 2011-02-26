@@ -5,6 +5,6 @@
 	<classpathentry kind="lib" path="/media/sda1/Users/Jason/workspace/ExternalJARs/bukkit-0.0.1-SNAPSHOT-412.jar"/>
 	<classpathentry kind="lib" path="/media/sda1/Users/Jason/workspace/ExternalJARs/Permissions.jar"/>
 	<classpathentry kind="lib" path="/media/sda1/Users/Jason/workspace/ExternalJARs/craftbukkit-0.0.1-SNAPSHOT-432.jar"/>
-	<classpathentry kind="lib" path="/media/sda1/Users/Jason/workspace/ExternalJARs/iConomyCookieWrapper.jar"/>
+	<classpathentry kind="lib" path="/media/sda1/Users/Jason/workspace/ExternalJARs/iConomy3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

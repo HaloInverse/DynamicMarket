@@ -39,6 +39,8 @@ public class TransactionLogger {
 		try {
 			logWriter.newLine();
 			logWriter.write(thisLine);
+			if(this.autoFlush)
+				logWriter.flush();
 		} catch (IOException ex) {
 			logSevereException("Error writing output line to log file: " + logFileName, ex);
 			isOK = false;
