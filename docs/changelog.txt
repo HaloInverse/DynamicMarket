@@ -23,7 +23,7 @@ TODO:
     - Auto-transactions triggered by market condition/timer.
         - External plugin?
     
-0.4.8:
+0.4.8...:
     - shopLabel moved from a table name suffix to a table field.
     - Redundant shopLabel parameters removed when the shopLabel could be extracted from a MarketItem object.
     

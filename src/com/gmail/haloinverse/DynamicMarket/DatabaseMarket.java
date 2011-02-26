@@ -218,6 +218,7 @@ public class DatabaseMarket extends DatabaseCore
 		ArrayList<MarketItem> data = new ArrayList<MarketItem>();
 	  	int startItem = 0;
 	  	int numItems = 9999999;
+	  	MarketItem newItem;
 	  	if (pageNum > 0)
 	  	{
 	  		startItem = (pageNum - 1) * 8;
@@ -245,8 +246,12 @@ public class DatabaseMarket extends DatabaseCore
 		if (myQuery.isOK)
 			try {
 				while (myQuery.rs.next())
+				{
 					//data.add(new ShopItem(myQuery.rs.getInt("item"),myQuery.rs.getInt("type"), myQuery.rs.getInt("buy"), myQuery.rs.getInt("sell"), myQuery.rs.getInt("per") ));
-					data.add(new MarketItem(myQuery));
+					newItem = new MarketItem(myQuery);
+					newItem.thisDatabase = this;
+					data.add(newItem);
+				}
 			} catch (SQLException ex) {
 				logSevereException("SQL Error during ArrayList fetch: " + dbTypeString(), ex);
 			}
@@ -265,7 +270,7 @@ public class DatabaseMarket extends DatabaseCore
 	public MarketItem data(ItemClump thisItem, String shopLabel) {
 	  //CHANGED: Returns MarketItems now.
 		SQLHandler myQuery = new SQLHandler(this);
-		MarketItem data = null;
+		MarketItem fetchedData = null;
 
 		myQuery.inputList.add(thisItem.itemId);
 		myQuery.inputList.add(thisItem.subType);
@@ -278,24 +283,25 @@ public class DatabaseMarket extends DatabaseCore
 			if (myQuery.rs != null)
 				if (myQuery.rs.next())
 					//data = new ShopItem(myQuery.rs.getInt("item"), myQuery.rs.getInt("type"), myQuery.rs.getInt("buy"), myQuery.rs.getInt("sell"), myQuery.rs.getInt("per"));
-					data = new MarketItem(myQuery);
-					data.shopLabel = shopLabel;
+					fetchedData = new MarketItem(myQuery);
+					fetchedData.shopLabel = shopLabel;
+					fetchedData.thisDatabase = this;
 					// TODO: Change constructor to take a ResultSet and throw SQLExceptions.
 		} catch (SQLException ex) {
 			logSevereException("Error retrieving shop item data with " + dbTypeString(), ex);
-			data = null;
+			fetchedData = null;
 		}
 		
 		// Temp until constructor throws SQLExceptions
 		if (!(myQuery.isOK))
-			data = null;
+			fetchedData = null;
 		
 		myQuery.close();
 
 		//if (data == null) { data = new MarketItem(); }
 		//Return null if no matching data found.
 		
-		return data;
+		return fetchedData;
 	}
 	
 	public boolean hasRecord(MarketItem thisItem)

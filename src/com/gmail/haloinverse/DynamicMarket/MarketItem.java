@@ -26,6 +26,7 @@ public class MarketItem extends ItemClump {
 	public int driftIn;
 	public int avgStock;
 	public int itemClass;
+	public String shopLabel = "";	// Shop DB table this is a member of. 
 			// Other input tags:
 								//fixed // stock = 0
 										// stockLowest = Integer.MIN_VALUE
@@ -42,7 +43,6 @@ public class MarketItem extends ItemClump {
 								// nosell // canSell = 0	
 	public static int intScale = 10000; // Scale factor used in integerization of calculations.
 	public DatabaseMarket thisDatabase = null; // Database object this item is a member of.
-	public String shopLabel = "";	// Shop DB table this is a member of. 
 	
 	/*	diamond: 10 items -> 10% price change, 1 item -> 1% price change, 0.01 * 10000 = 1000
 	 *  
