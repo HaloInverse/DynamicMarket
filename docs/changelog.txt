@@ -21,8 +21,11 @@ TODO:
         - Supply data object + mask object to MarketDatabase.
     - Threading of tasks when applicable.
     - Auto-transactions triggered by market condition/timer.
+        - External plugin?
     
-
+0.4.8:
+    - shopLabel moved from a table name suffix to a table field.
+    - Redundant shopLabel parameters removed when the shopLabel could be extracted from a MarketItem object.
     
 0.4.7.1:
     - The beginnings of multi-economy support.

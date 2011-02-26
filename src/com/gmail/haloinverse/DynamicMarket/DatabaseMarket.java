@@ -9,40 +9,16 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-//import com.bukkit.haloinverse.SimpleMarket.DatabaseCore.Type;
-
 		  
-		  // NOTE:
-		  // For fluctuating market, current_price = base_price * (1+stepSize)^(-stockLevel/volatilityFactor)
-		  // volatilityFactor: Speed of market fluctuations. volatility=64 changes price 64 times slower than volatility=1.
-		  
-		  // Future DB structure:
-		  // id: Unique auto-increment key.
-		  // item: Item ID
-		  // subtype: Item subtype
-		  // name: Name of item+subtype
-		  // basePrice: Base price of item at stock=0.
-		  // stock: Current stock of item.
-		  // volatility: % change in price per 1 stock bought/sold
-		  // salesTax: Ratio of buy to sell prices. sellPrice = buyPrice * (1 - (salesTax/100)).
-		  // stockMin: Minimum stock beyond which purchases will fail.
-		  // stockMax: Maximum stock beyond which sales will fail.
-		  // stockFloor: Lower cap on stock count.
-		  // stockCeil: Upper cap on stock count.
-		  // minPrice: Minimum price of items.
-		  // maxPrice: Maximum price of items.
-		  
-		  //CHANGED: Many redundant methods removed.
-		  //Old functionality can be duplicated by getting the fields of the returned ShopItem object.
-		  
- public class DatabaseMarket extends DatabaseCore
- {
+public class DatabaseMarket extends DatabaseCore
+{
  	//public Type database = null;
  	public Items itemsReference = null;
 
 	public DatabaseMarket(Type database, String tableAccessed, Items itemsRef, String thisEngine, DynamicMarket pluginRef)
 	{
 		super(database, tableAccessed, thisEngine, pluginRef);  // default table name: "Market"
+		checkNewFields();
 		this.itemsReference = itemsRef;
 	}
 	
@@ -52,17 +28,40 @@ import java.util.ArrayList;
 		super(database, tableAccessed, thisEngine, pluginRef);
 		this.itemsReference = null;
 	}
-
-	@Deprecated
-	protected boolean createTable()
+	
+	protected void checkColumn(String columnName, String columnDef)
 	{
-		return createTable("");
+		SQLHandler myQuery = new SQLHandler(this);
+		if (!myQuery.checkColumnExists(tableName, columnName))
+		{
+			myQuery.prepareStatement("ALTER TABLE " + tableName + " ADD ? ?");
+			myQuery.inputList.add(columnName);
+			myQuery.inputList.add(columnDef);
+			myQuery.executeUpdate();
+		}
 	}
 	
-	protected boolean createTable(String shopLabel) {
+	protected void checkNewFields()
+	{
+		checkColumn("shoplabel", (this.database.equals(Type.SQLITE)?
+				"TEXT NOT NULL DEFAULT ''; CREATE INDEX shoplabelIndex ON Market (shoplabel)"
+				: "CHAR(20) NOT NULL DEFAULT ''; CREATE INDEX shopLabelIndex ON Market (shopLabel)"));
+	}
+	
+	protected boolean createTable(String shopLabel)
+	{
+		SQLHandler myQuery = new SQLHandler(this);
+		if (!myQuery.checkTable(tableName))
+			createTable();
+		else
+			return false;
+		return add(new MarketItem("-1,-1 n:Default", null, this, shopLabel));
+	}
+	
+	protected boolean createTable() {
 		SQLHandler myQuery = new SQLHandler(this);
 		if (this.database.equals(Type.SQLITE))
-			myQuery.executeStatement("CREATE TABLE " + tableName+shopLabel + " ( id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+			myQuery.executeStatement("CREATE TABLE " + tableName + " ( id INTEGER PRIMARY KEY AUTOINCREMENT, " +
 					"item INT NOT NULL, " +
 					"subtype INT NOT NULL, " +
 					"name TEXT NOT NULL, " +
@@ -83,12 +82,14 @@ import java.util.ArrayList;
 					"driftout INT NOT NULL, " +
 					"driftin INT NOT NULL, " +
 					"avgstock INT NOT NULL, " +
-					"class INT NOT NULL);" +
+					"class INT NOT NULL, " +
+					"shoplabel TEXT NOT NULL DEFAULT '');" +
 					"CREATE INDEX itemIndex ON Market (item);" +
-					"CREATE INDEX subtypeIndex on Market (subtype);" +
-					"CREATE INDEX nameIndex on Market (name)");
+					"CREATE INDEX subtypeIndex ON Market (subtype);" +
+					"CREATE INDEX nameIndex ON Market (name);" +
+					"CREATE INDEX shoplabelIndex ON Market (shoplabel)");
 		else
-			myQuery.executeStatement("CREATE TABLE " + tableName+shopLabel + " ( id INT( 255 ) NOT NULL AUTO_INCREMENT, " +
+			myQuery.executeStatement("CREATE TABLE " + tableName + " ( id INT( 255 ) NOT NULL AUTO_INCREMENT, " +
 					"item INT NOT NULL, " +
 					"subtype INT NOT NULL, " +
 					"name CHAR(20) NOT NULL, " +
@@ -110,7 +111,8 @@ import java.util.ArrayList;
 					"driftin INT NOT NULL, " +
 					"avgstock INT NOT NULL, " +
 					"class INT NOT NULL, " +
-					"PRIMARY KEY ( id ), INDEX ( item, subtype, name )) ENGINE = "+ engine + ";");
+					"shoplabel CHAR(20) NOT NULL DEFAULT '', " +
+					"PRIMARY KEY ( id ), INDEX ( item, subtype, name, shoplabel )) ENGINE = "+ engine + ";");
 		myQuery.close();
 		
 		if (!myQuery.isOK)
@@ -118,19 +120,19 @@ import java.util.ArrayList;
 		
 		// Add default record.
 		
-		return add(new MarketItem("-1,-1 n:Default", null, this, shopLabel), shopLabel);
+		return add(new MarketItem("-1,-1 n:Default", null, this, ""));
 	}
-			
-	@Deprecated
-	public boolean add(Object addRef)
+	
+	public boolean add(Object newItem)
 	{
-		if (addRef instanceof MarketItem)
-			return add((MarketItem)addRef, "");
+		if (newItem instanceof MarketItem)
+			return add((MarketItem)newItem);
 		return false;
 	}
 	
-	public boolean add(MarketItem newItem, String shopLabel) {
-	  //TODO: Check for pre-existing records.
+	public boolean add(MarketItem newItem) {
+	  	if (hasRecord(newItem, newItem.shopLabel))
+	  		return false;	// Don't add if a record already exists.
 
 		SQLHandler myQuery = new SQLHandler(this);
 
@@ -150,23 +152,18 @@ import java.util.ArrayList;
 		myQuery.inputList.add(newItem.stockCeil);
 		myQuery.inputList.add(newItem.priceFloor);
 		myQuery.inputList.add(newItem.priceCeil);
+		myQuery.inputList.add(newItem.shopLabel);
 		
-		myQuery.prepareStatement("INSERT INTO " + tableName+shopLabel + " (item, subtype, count, name, baseprice, stock, canbuy, cansell, volatility, " +
-		"salestax, stocklowest, stockhighest, stockfloor, stockceil, pricefloor, priceceil, class, jitterperc, driftin, driftout, avgstock) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,0,0,0,0)");
+		myQuery.prepareStatement("INSERT INTO " + tableName + " (item, subtype, count, name, baseprice, stock, canbuy, cansell, volatility, " +
+		"salestax, stocklowest, stockhighest, stockfloor, stockceil, pricefloor, priceceil, class, jitterperc, driftin, driftout, avgstock, shoplabel) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,0,0,0,0,?)");
 		
 		myQuery.executeUpdate();
 		
 		myQuery.close();
 		return (myQuery.isOK);
 	}
-
-	@Deprecated
-	public boolean update(MarketItem updated)
-	{
-		return update(updated, "");
-	}
 	
-	public boolean update(MarketItem updated, String shopLabel) {
+	public boolean update(MarketItem updated) {
 		SQLHandler myQuery = new SQLHandler(this);
 
 		myQuery.inputList.add(updated.count);
@@ -186,9 +183,10 @@ import java.util.ArrayList;
 
 		myQuery.inputList.add(updated.itemId);
 		myQuery.inputList.add(updated.subType);
+		myQuery.inputList.add(updated.shopLabel);
 		
-		myQuery.prepareStatement("UPDATE " + tableName+shopLabel + " SET count = ?, name = ?, baseprice = ?, stock = ?, canbuy = ?, cansell = ?, volatility = ?, " +
-				"salestax = ?, stocklowest = ?, stockhighest = ?, stockfloor = ?, stockceil = ?, pricefloor = ?, priceceil = ? WHERE item = ? AND subtype = ?" + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
+		myQuery.prepareStatement("UPDATE " + tableName + " SET count = ?, name = ?, baseprice = ?, stock = ?, canbuy = ?, cansell = ?, volatility = ?, " +
+				"salestax = ?, stocklowest = ?, stockhighest = ?, stockfloor = ?, stockceil = ?, pricefloor = ?, priceceil = ? WHERE item = ? AND subtype = ? AND shoplabel = ? " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
 
 		myQuery.executeUpdate();
 		
@@ -228,16 +226,18 @@ import java.util.ArrayList;
 	  
 	  	if ((nameFilter == null) || (nameFilter.isEmpty()))
 	  	{
+	  		myQuery.inputList.add(shopLabel);		
 	  		myQuery.inputList.add(startItem);
 	  		myQuery.inputList.add(numItems);
-	  		myQuery.prepareStatement("SELECT * FROM " + tableName+shopLabel + " WHERE item >= 0 ORDER BY item ASC, subtype ASC LIMIT ?, ?");
+	  		myQuery.prepareStatement("SELECT * FROM " + tableName + " WHERE (item >= 0 AND shoplabel = ?) ORDER BY item ASC, subtype ASC LIMIT ?, ?");
 	  	}
 	  	else
 	  	{
 	  		myQuery.inputList.add("%" + nameFilter + "%");
+	  		myQuery.inputList.add(shopLabel);
 	  		myQuery.inputList.add(startItem);
 	  		myQuery.inputList.add(numItems);
-	  		myQuery.prepareStatement("SELECT * FROM " + tableName+shopLabel + " WHERE (item >= 0 AND name LIKE ?) ORDER BY item ASC, subtype ASC LIMIT ?, ?");
+	  		myQuery.prepareStatement("SELECT * FROM " + tableName + " WHERE (item >= 0 AND name LIKE ? AND shoplabel = ?) ORDER BY item ASC, subtype ASC LIMIT ?, ?");
 	  	}	  	
 		
 		myQuery.executeQuery();
@@ -246,7 +246,7 @@ import java.util.ArrayList;
 			try {
 				while (myQuery.rs.next())
 					//data.add(new ShopItem(myQuery.rs.getInt("item"),myQuery.rs.getInt("type"), myQuery.rs.getInt("buy"), myQuery.rs.getInt("sell"), myQuery.rs.getInt("per") ));
-					data.add(new MarketItem(myQuery, shopLabel));
+					data.add(new MarketItem(myQuery));
 			} catch (SQLException ex) {
 				logSevereException("SQL Error during ArrayList fetch: " + dbTypeString(), ex);
 			}
@@ -269,7 +269,8 @@ import java.util.ArrayList;
 
 		myQuery.inputList.add(thisItem.itemId);
 		myQuery.inputList.add(thisItem.subType);
-		myQuery.prepareStatement("SELECT * FROM " + tableName+shopLabel + " WHERE item = ? AND subtype = ? LIMIT 1");
+  		myQuery.inputList.add(shopLabel);
+		myQuery.prepareStatement("SELECT * FROM " + tableName + " WHERE (item = ? AND subtype = ? AND shoplabel = ?) LIMIT 1");
 
 		myQuery.executeQuery();
 
@@ -277,7 +278,8 @@ import java.util.ArrayList;
 			if (myQuery.rs != null)
 				if (myQuery.rs.next())
 					//data = new ShopItem(myQuery.rs.getInt("item"), myQuery.rs.getInt("type"), myQuery.rs.getInt("buy"), myQuery.rs.getInt("sell"), myQuery.rs.getInt("per"));
-					data = new MarketItem(myQuery, shopLabel);
+					data = new MarketItem(myQuery);
+					data.shopLabel = shopLabel;
 					// TODO: Change constructor to take a ResultSet and throw SQLExceptions.
 		} catch (SQLException ex) {
 			logSevereException("Error retrieving shop item data with " + dbTypeString(), ex);
@@ -296,6 +298,11 @@ import java.util.ArrayList;
 		return data;
 	}
 	
+	public boolean hasRecord(MarketItem thisItem)
+	{
+		return hasRecord((ItemClump)thisItem, thisItem.shopLabel);
+	}
+	
 	public boolean hasRecord(ItemClump thisItem, String shopLabel)
 	{
 		// Checks if a given ItemClump has a database entry.
@@ -304,7 +311,8 @@ import java.util.ArrayList;
 
 		myQuery.inputList.add(thisItem.itemId);
 		myQuery.inputList.add(thisItem.subType);
-		myQuery.prepareStatement("SELECT * FROM " + tableName+shopLabel + " WHERE item = ? AND subtype = ? LIMIT 1");
+  		myQuery.inputList.add(shopLabel);
+		myQuery.prepareStatement("SELECT * FROM " + tableName + " WHERE (item = ? AND subtype = ? AND shoplabel = ?) LIMIT 1");
 
 		myQuery.executeQuery();
 		
@@ -326,10 +334,11 @@ import java.util.ArrayList;
 		myQuery.inputList.add(thisItem.count);
 		myQuery.inputList.add(thisItem.itemId);
 		myQuery.inputList.add(thisItem.subType);
+  		myQuery.inputList.add(shopLabel);
 		if (this.database.equals(Type.SQLITE))
-			myQuery.prepareStatement("UPDATE " + tableName+shopLabel + " SET stock = min(stock + ?, stockceil) WHERE item = ? AND subtype = ? " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
+			myQuery.prepareStatement("UPDATE " + tableName + " SET stock = min(stock + ?, stockceil) WHERE (item = ? AND subtype = ? AND shoplabel = ?) " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
 		else
-			myQuery.prepareStatement("UPDATE " + tableName+shopLabel + " SET stock = LEAST(stock + ?, stockceil) WHERE item = ? AND subtype = ? " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
+			myQuery.prepareStatement("UPDATE " + tableName + " SET stock = LEAST(stock + ?, stockceil) WHERE (item = ? AND subtype = ? AND shoplabel = ?) " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
 			
 
 		myQuery.executeUpdate();
@@ -346,10 +355,11 @@ import java.util.ArrayList;
 		myQuery.inputList.add(thisItem.count);
 		myQuery.inputList.add(thisItem.itemId);
 		myQuery.inputList.add(thisItem.subType);
+  		myQuery.inputList.add(shopLabel);
 		if (this.database.equals(Type.SQLITE))
-			myQuery.prepareStatement("UPDATE " + tableName+shopLabel + " SET stock = max(stock - ?, stockfloor) WHERE item = ? AND subtype = ? " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
+			myQuery.prepareStatement("UPDATE " + tableName + " SET stock = max(stock - ?, stockfloor) WHERE (item = ? AND subtype = ? AND shoplabel = ?) " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
 		else
-			myQuery.prepareStatement("UPDATE " + tableName+shopLabel + " SET stock = GREATEST(stock - ?, stockfloor) WHERE item = ? AND subtype = ? " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
+			myQuery.prepareStatement("UPDATE " + tableName + " SET stock = GREATEST(stock - ?, stockfloor) WHERE (item = ? AND subtype = ? AND shoplabel = ?) " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
 		
 		myQuery.executeUpdate();
 		
@@ -376,7 +386,8 @@ import java.util.ArrayList;
 		SQLHandler myQuery = new SQLHandler(this);
 
 		myQuery.inputList.add(searchName);
-		myQuery.prepareStatement("SELECT item, subtype FROM " + tableName+shopLabel + " WHERE name = ? LIMIT 1");
+  		myQuery.inputList.add(shopLabel);
+		myQuery.prepareStatement("SELECT item, subtype FROM " + tableName + " WHERE (name = ? AND shopLabel = ?) LIMIT 1");
 
 		myQuery.executeQuery();
 
@@ -403,7 +414,8 @@ import java.util.ArrayList;
 		myQuery = new SQLHandler(this);
 
 		myQuery.inputList.add("%" + searchName + "%");
-		myQuery.prepareStatement("SELECT item, subtype FROM " + tableName+shopLabel + " WHERE name LIKE ? LIMIT 1");
+  		myQuery.inputList.add(shopLabel);
+		myQuery.prepareStatement("SELECT item, subtype FROM " + tableName + " WHERE (name LIKE ? AND shoplabel = ?) LIMIT 1");
 
 		myQuery.executeQuery();
 
@@ -438,8 +450,9 @@ import java.util.ArrayList;
 		
 		myQuery.inputList.add(itemData.itemId);
 		myQuery.inputList.add(itemData.subType);
-		
-		myQuery.prepareStatement("SELECT name FROM " + tableName+shopLabel + " WHERE item = ? AND subtype = ? LIMIT 1");
+  		myQuery.inputList.add(shopLabel);
+
+		myQuery.prepareStatement("SELECT name FROM " + tableName + " WHERE (item = ? AND subtype = ? AND shoplabel = ?) LIMIT 1");
 		myQuery.executeQuery();
 
 		try
@@ -479,7 +492,8 @@ import java.util.ArrayList;
 
 			myQuery.inputList.add(removed.itemId);
 			myQuery.inputList.add(removed.subType);
-			myQuery.prepareStatement("DELETE FROM " + tableName+shopLabel + " WHERE item = ? AND subtype = ?" + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
+	  		myQuery.inputList.add(shopLabel);
+			myQuery.prepareStatement("DELETE FROM " + tableName + " WHERE (item = ? AND subtype = ? AND shoplabel = ?) " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
 
 			myQuery.executeUpdate();
 			
@@ -573,11 +587,11 @@ import java.util.ArrayList;
 			if (hasRecord(importItem, shopLabel))
 			{
 				importItem = new MarketItem(line, data(importItem, shopLabel), true);
-				update(importItem, shopLabel);
+				update(importItem);
 			}
 			else
 			{
-				add(importItem, shopLabel);
+				add(importItem);
 			}
 			try {
 				line = reader.readLine();

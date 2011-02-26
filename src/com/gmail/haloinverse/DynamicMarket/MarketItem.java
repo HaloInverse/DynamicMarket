@@ -375,7 +375,7 @@ public class MarketItem extends ItemClump {
 		sanityCheck();
 	}
 	
-	public MarketItem(SQLHandler myQuery, String thisShopLabel)
+	public MarketItem(SQLHandler myQuery)
 	{
 		// Initialize a new MarketItem from an SQLHandler ResultSet.
 		super();
@@ -396,8 +396,8 @@ public class MarketItem extends ItemClump {
 		this.stockCeil = myQuery.getInt("stockceil");
 		this.priceFloor = myQuery.getInt("pricefloor");
 		this.priceCeil = myQuery.getInt("priceceil");
+		this.shopLabel = myQuery.getString("shoplabel");
 		sanityCheck();
-		shopLabel = thisShopLabel;
 	}
 	
 	private void sanityCheck()

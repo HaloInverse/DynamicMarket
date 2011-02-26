@@ -767,7 +767,7 @@ public class iListen extends PlayerListener
 			return false;
 		}
 
-		if (plugin.db.hasRecord(newItem, shopLabel))
+		if (plugin.db.hasRecord(newItem))
 		{
 			message.send(plugin.shop_tag + "{ERR}"+newItem.getName()+" is already in the market list.");
 			message.send(plugin.shop_tag + "{ERR}Use {CMD}/shop update{ERR} instead.");
@@ -779,7 +779,7 @@ public class iListen extends PlayerListener
 			return false;
 		}
 
-		if (plugin.db.add(newItem, shopLabel))
+		if (plugin.db.add(newItem))
 		{
 			message.send(plugin.shop_tag + "Item {PRM}" + newItem.getName() + "{} added:");
 		 	//message.send(newItem.infoStringBuy());
@@ -834,7 +834,7 @@ public class iListen extends PlayerListener
 					return false;
 				}
  
-				if (plugin.db.update(updated, shopLabel))
+				if (plugin.db.update(updated))
 				{
 					message.send(plugin.shop_tag + "Item {PRM}" + updated.getName() + "{} updated:");
 			//message.send(updated.infoStringBuy());

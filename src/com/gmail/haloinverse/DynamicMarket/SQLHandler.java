@@ -126,6 +126,26 @@ public class SQLHandler {
 		return bool;
 	}
 	
+	public boolean checkColumnExists(String tableName, String columnName)
+	{
+		boolean bool = false;
+		if (conn != null)
+			try {
+				DatabaseMetaData dbm = conn.getMetaData();
+				rs = dbm.getColumns(null, null, tableName, columnName);
+				bool = rs.next();
+				return bool;
+			}
+			catch (SQLException ex)
+			{
+				connDB.logSevereException("Column check for " + connDB.dbTypeString() + " Failed", ex);
+				isOK = false;
+				bool = false;
+				return bool;
+			}
+		return bool;
+	}
+	
 	public int getInt(String fieldName)
 	{
 		try {
