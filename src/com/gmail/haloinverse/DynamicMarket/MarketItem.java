@@ -68,6 +68,13 @@ public class MarketItem extends ItemClump {
 		shopLabel = thisShopLabel;
 	}
 	
+	public MarketItem()
+	{
+		// Default constructor with no parameters.
+		super();
+		setBaseDefaults();
+	}
+	
 	public MarketItem(String initString, MarketItem defaults, DatabaseMarket thisDB, String thisShopLabel)
 	{
 		//Valid input string formats:
@@ -75,7 +82,7 @@ public class MarketItem extends ItemClump {
 		//"[ItemName](:Count) (buyprice (sellPrice)) (field:val (field:val (...)))"
 		//TODO: Add alternate input format for setting low/high ranges with a single tag.
 		
-		super(initString.split(" ")[0], thisDB, thisShopLabel); // Parse id/name, type, and count from first split.
+		super(initString.split(" ",2)[0], thisDB, thisShopLabel); // Parse id/name, type, and count from first split.
 		
 		thisDatabase = thisDB;
 		shopLabel = thisShopLabel;
@@ -83,18 +90,12 @@ public class MarketItem extends ItemClump {
 		//SimpleMarket.log.info("[1] InitString: [" + initString + "]");
 		
 		String[] initData = initString.split(" ");
-		
-		String[] curParams;
-		String curTag;
-		Integer curVal;
-		String stringVal;
-		boolean setUntaggedBase = false;
 		 		
 		// Load defaults, if available.
 		if (defaults != null)
 		{
 			this.basePrice = Math.round((float)defaults.basePrice * this.count / defaults.count);
-			this.stock = defaults.stock;
+			this.stock = Math.round(((float)defaults.stock * defaults.count / this.count) - 0.5f);
 			this.canBuy = defaults.canBuy;
 			this.canSell = defaults.canSell;
 			this.volatility = defaults.volatility;
@@ -114,15 +115,29 @@ public class MarketItem extends ItemClump {
 		//Load data from remaining items in split.
 		//If first one or two items have no tag, assume they are the basePrice and the sellPrice.
 		
+		parseTags(initData);
+		
+		sanityCheck();
+	}
+	
+	private void parseTags(String initData[])
+	{
+		// Load data from a list of tags.
+		// Element [0] is ignored.
+		String curTag;
+		Integer curVal;
+		String stringVal;
+		String[] curParams;
+		boolean setUntaggedBase = false;
+		
 		if (initData.length > 1)
 		{
 			for (int i = 1; i <= initData.length - 1; i++)
 			{
 				stringVal = null;
 				// Get current tag and value
-				//SimpleMarket.log.info("[2] i: [" + i + "]");
-				//SimpleMarket.log.info("[2] initData[i]: [" + initData [i] + "]");
-				if (initData[i].contains(":")) // ArrayOutOfBounds here...?
+
+				if (initData[i].contains(":"))
 				{
 					curParams = initData[i].split(":");
 					curTag = curParams[0];
@@ -165,11 +180,13 @@ public class MarketItem extends ItemClump {
 						if (curVal != -1)
 						{
 							this.basePrice = curVal;
+							//maskData.basePrice = 1;
 						}
 						else
 						{
 							// Base price set to -1. Disable buying.
 							this.basePrice = 0;
+							//maskData.basePrice = 1;
 							this.canBuy = false;
 						}
 						setUntaggedBase = true;
@@ -187,11 +204,15 @@ public class MarketItem extends ItemClump {
 							// if salePrice = basePrice * (1 - (salesTax / 100))
 							// then (1 - (salePrice / basePrice)) * 100 = salesTax
 							if (this.basePrice != 0)
+							{
 								this.salesTax = Math.round((1 - ((float)curVal / basePrice)) * 100);
+								//maskData.salesTax = 1;
+							}
 							else
 							{
 								this.basePrice = curVal;
 								this.salesTax = 0;
+								//maskData.salesTax = 1;
 							}
 						}
 						else
@@ -355,23 +376,31 @@ public class MarketItem extends ItemClump {
 				}
 				if (curTag.equalsIgnoreCase("renorm"))
 				{
-					double oldBuyPrice = getStockPrice(this.stock);
+					//double oldBuyPrice = getStockPrice(this.stock);
+					int newStock;
 					if (curVal == null)
-						this.stock = 0;
+						newStock = 0;
 					else
-						this.stock = curVal;
+						newStock = curVal;
+					this.basePrice = getRenormedPrice(newStock);
+					this.stock = newStock;
 					// basePrice = inverse of stockPrice = rangeCrop(this.basePrice * Math.pow(getVolFactor(), -rangeCrop(stockLevel, stockFloor, stockCeil)), priceFloor, priceCeil)
 					/*
 					 * oldstockPrice = this.basePrice * (getVolFactor() ^ -stockLevel)
 					 * oldstockPrice / (getVolFactor() ^ -stockLevel) = basePrice 
 					 */
-					this.basePrice = (int)Math.round(oldBuyPrice / Math.pow(getVolFactor(), -rangeCrop(this.stock, stockFloor, stockCeil)));
+					//this.basePrice = (int)Math.round(oldBuyPrice / Math.pow(getVolFactor(), -rangeCrop(this.stock, stockFloor, stockCeil)));
 				}
 			}
 			//TODO: Log and report invalid tags somehow.
 		}
-		
-		sanityCheck();
+	}
+	
+	public int getRenormedPrice(int newStock)
+	{
+		// Calculate what the renormalized base price would be when shifting from the current stock level to newStock.
+		double oldBuyPrice = getStockPrice(this.stock);
+		return (int)Math.round(oldBuyPrice / Math.pow(getVolFactor(), -rangeCrop(newStock, stockFloor, stockCeil)));
 	}
 	
 	public MarketItem(SQLHandler myQuery)
@@ -450,22 +479,17 @@ public class MarketItem extends ItemClump {
 		priceCeil = Integer.MAX_VALUE;
 	}
 	
-
-	
-	
-	
-	
 	//public int sellPrice()
 	//{
 	//	return (rangeCrop(Math.round(basePrice * (1 - (salesTax / 100))), priceFloor, priceCeil));
 	//}
 	
-	private int rangeCrop(int value, int minVal, int maxVal)
+	public static int rangeCrop(int value, int minVal, int maxVal)
 	{
 		return (Math.min(Math.max(value, minVal), maxVal));
 	}
 	
-	private double rangeCrop(double value, double minVal, double maxVal)
+	public static double rangeCrop(double value, double minVal, double maxVal)
 	{
 		return (Math.min(Math.max(value, minVal), maxVal));
 	}
@@ -611,10 +635,20 @@ public class MarketItem extends ItemClump {
 	
 	public void setInverseVolatility(int newIVol)
 	{
-		if (newIVol == Integer.MAX_VALUE)
-			setVolatility(0);
+		//if (newIVol == Integer.MAX_VALUE)
+		//	setVolatility(0);
+		//else
+		//	setVolatility((Math.pow(2,(1/(double)newIVol))-1) * intScale);
+		setVolatility(iVolToVol(newIVol));
+	}
+	
+	public static int iVolToVol(int invVol)
+	{
+		// Converts inverse volatility to volatility.
+		if (invVol == Integer.MAX_VALUE)
+			return 0;
 		else
-			setVolatility((Math.pow(2,(1/(double)newIVol))-1) * intScale);
+			return (int)Math.round((Math.pow(2,(1/(double)invVol))-1) * intScale);
 	}
 	
 	private double stockAtPrice(int targPrice)
@@ -887,6 +921,7 @@ public class MarketItem extends ItemClump {
 		this.shopLabel = null;
 	}
 	
+	/*
 	public void copyMasked(MarketItem data, MarketItem mask)
 	{
 		// Copies in the fields from data, for only the fields set non-zero/non-null/true in mask.
@@ -910,5 +945,5 @@ public class MarketItem extends ItemClump {
 		if (mask.itemClass != 0) 	this.itemClass = data.itemClass;
 		if (mask.shopLabel != null) this.shopLabel = data.shopLabel;
 	}
-
+	*/
 }

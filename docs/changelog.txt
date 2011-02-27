@@ -22,10 +22,15 @@ TODO:
     - Threading of tasks when applicable.
     - Auto-transactions triggered by market condition/timer.
         - External plugin?
+    - Improve multiple-field-updates in database code.
     
 0.4.8...:
     - shopLabel moved from a table name suffix to a table field.
     - Redundant shopLabel parameters removed when the shopLabel could be extracted from a MarketItem object.
+    - Added DatabaseMarket.updateAllFromTags() to apply a series of tags to all items at once.
+    - Altering an item's bundleSize now changes its stock level, as well as its basePrice.
+        - New stock level is rounded down, to stave off future item duplication issues.
+        - Player shops will have to eject items which do not fit in an integer number of bundles.
     
 0.4.7.1:
     - The beginnings of multi-economy support.

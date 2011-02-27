@@ -39,6 +39,7 @@ public class ItemClump {
 			//Valid input string formats:
 			//"[ID(,Type)](:Count) (ignored)"
 			//"[ItemName](:Count) (ignored)"
+			//Pass null to namesDB to skip name lookup.
 			itemId = -1;
 			subType = 0;
 			count = 1;
@@ -91,12 +92,15 @@ public class ItemClump {
 				}
 				else
 				{
-					ItemClump foundItem = namesDB.nameLookup(initData[0], shopLabel);
-					if (foundItem != null)
+					if (namesDB != null)
 					{
-						itemId = foundItem.itemId;
-						if (!subtypeParsed)
-							subType = foundItem.subType;
+						ItemClump foundItem = namesDB.nameLookup(initData[0], shopLabel);
+						if (foundItem != null)
+						{
+							itemId = foundItem.itemId;
+							if (!subtypeParsed)
+								subType = foundItem.subType;
+						}
 					}
 				}
 			}
