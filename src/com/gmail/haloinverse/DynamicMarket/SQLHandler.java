@@ -14,6 +14,7 @@ public class SQLHandler {
 
 	public Connection conn;
 	public PreparedStatement ps;
+	private ArrayList<PreparedStatement> psList;
 	public ResultSet rs;
 	public DatabaseCore connDB;
 	public ArrayList<Object> inputList;
@@ -26,6 +27,7 @@ public class SQLHandler {
 		connDB = thisDB;
 		try {
 			conn = connDB.connection();
+			conn.setAutoCommit(false);
 		} catch (ClassNotFoundException ex) {
 			connDB.logSevereException("Database connector not found for " + connDB.dbTypeString(), ex);
 			conn = null;
@@ -42,7 +44,12 @@ public class SQLHandler {
 	public void prepareStatement(String sqlString) 
 	{
 		try {
-			ps = null;
+			// Store previous prepareStatement, if one was already prepared.
+			if (ps != null)
+			{
+				psList.add(ps);
+				ps = null;
+			}
 			if (conn != null)
 			{
 				ps = conn.prepareStatement(sqlString);
@@ -50,6 +57,7 @@ public class SQLHandler {
 				{
 					ps.setObject(i, inputList.get(i-1));
 				}
+				inputList.clear();
 			}
 		} catch (SQLException ex) {
 			// TODO Auto-generated catch block
@@ -59,12 +67,71 @@ public class SQLHandler {
 		}
 	}
 	
+	public void prepareBatchStatement(String sqlString)
+	{
+		// Takes the sqlString, and creates a preparedStatement.
+		// Unlike prepareStatement, this does NOT read the parameters already entered into inputList.
+		// The inputList is instead read by addToBatch.
+		try {
+			// Store previous prepareStatement, if one was already prepared.
+			if (ps != null)
+			{
+				psList.add(ps);
+				ps = null;
+			}
+			if (conn != null)
+			{
+				ps = conn.prepareStatement(sqlString);
+				//for(int i = 1; i <= inputList.size(); ++i)
+				//{
+				//	ps.setObject(i, inputList.get(i-1));
+				//}
+				//inputList.clear();
+			}
+		} catch (SQLException ex) {
+			connDB.logSevereException("Error preparing query statement [" + sqlString + "] for " + connDB.dbTypeString(), ex);	
+			ps = null;
+			isOK = false;
+		}
+	}
+	
+	public void addToBatch()
+	{
+		// Add the current inputList to the current (batch)preparedStatement as a batch item.
+		for(int i = 1; i <= inputList.size(); ++i)
+		{
+			try
+			{
+				ps.setObject(i, inputList.get(i-1));
+			} catch (SQLException ex) {
+				connDB.logSevereException("Error adding [" + inputList.get(i-1) + "] to batch in position " + i + " for " + connDB.dbTypeString(), ex);	
+				ps = null;
+				isOK = false;
+				break;
+			}
+		}
+		try {
+			ps.addBatch();
+		} catch (SQLException ex) {
+			connDB.logSevereException("Error adding completed batch to PreparedStatement for " + connDB.dbTypeString(), ex);	
+			ps = null;
+			isOK = false;
+		}
+		inputList.clear();		
+	}
+	
 	public void executeQuery()
 	{
+		// Executes only the most recent preparedStatement, AND returns the result.
+		// Clears the preparedStatement after use.
 		try {
 			rs = null;
 			if (ps != null)
+			{
 				rs = ps.executeQuery();
+				conn.commit();
+				ps = null;
+			}
 		} catch (SQLException ex) {
 			connDB.logSevereException("Error executing query statement [" + ps.toString() + "] with " + connDB.dbTypeString(), ex);
 			rs = null;
@@ -72,11 +139,24 @@ public class SQLHandler {
 		}
 	}
 	
-	public void executeUpdate()
+	public void executeUpdates()
 	{
+		// Executes all currently loaded preparedStatements.
 		try {
+			// Store previous prepareStatement, if one was already prepared.
 			if (ps != null)
-				ps.executeUpdate();
+			{
+				psList.add(ps);
+				ps = null;
+			}
+			if (!psList.isEmpty())
+			{
+				for(PreparedStatement thisPs : psList)
+					thisPs.executeUpdate();
+				// Clear list once finished execution.
+				psList.clear();
+				conn.commit();
+			}
 		} catch (SQLException ex) {
 			connDB.logSevereException("Error executing update statement [" + ps.toString() + "] with " + connDB.dbTypeString(), ex);
 			isOK = false;
@@ -91,6 +171,7 @@ public class SQLHandler {
 			try {
 				st = conn.createStatement();
 				st.executeUpdate(sqlStatement);
+				conn.commit();
 			} catch (SQLException ex) {
 				connDB.logSevereException("Error executing statement [" + sqlStatement + "] with " + connDB.dbTypeString(), ex);
 				isOK = false;
