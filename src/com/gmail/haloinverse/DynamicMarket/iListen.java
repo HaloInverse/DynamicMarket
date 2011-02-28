@@ -798,7 +798,44 @@ public class iListen extends PlayerListener
 	
 	private boolean shopUpdateItem(String itemStringIn, Messaging message, String shopLabel)
 	{
-		String itemString = new String(itemStringIn); 
+		// Make a copy of itemStringIn, in case modification is needed.
+		String itemString = new String(itemStringIn);
+		
+		// Check if the item name is "all".
+		String firstItem = itemString.split(" ",2)[0];
+		String thisName = firstItem.split(":",2)[0];
+		if (thisName.equalsIgnoreCase("all"))
+		{
+			// Update-all requested.
+			// Check bundle size first.
+			try
+			{
+				if (firstItem.contains(":"))
+					if (Integer.valueOf(firstItem.split(":",2)[1]) > plugin.max_per_sale)
+					{
+						message.send(plugin.shop_tag + "{ERR}Invalid bundle size [" +firstItem.split(":",2)[1]+ "]. (Range: 1.." + plugin.max_per_sale + ")");
+						return false;
+					}
+			}
+			catch (NumberFormatException ex)
+			{
+				message.send(plugin.shop_tag + "{ERR}Invalid bundle size [" +firstItem.split(":",2)[1]+ "]. (Range: 1.." + plugin.max_per_sale + ")");
+				return false;
+			}
+			
+			if (plugin.db.updateAllFromTags(itemStringIn, shopLabel))
+			{
+				message.send(plugin.shop_tag + " All shop items updated.");
+				return true;
+			}
+			else
+			{
+				message.send(plugin.shop_tag + " {ERR}All shop items update failed.");
+				return false;
+			}
+		}
+		// End of update-all subsection
+		
 		// Fetch the previous record and use it as the default for parsing these string tags.
 
 		ItemClump requested = new ItemClump(itemString, plugin.db, shopLabel);
@@ -811,7 +848,7 @@ public class iListen extends PlayerListener
 		MarketItem prevData = plugin.db.data(requested, shopLabel);
 
 		if (prevData == null) {
-			message.send(plugin.shop_tag + "{ERR}" + itemString.split(" ")[0] + " not found in market.");
+			message.send(plugin.shop_tag + "{ERR}" + itemString.split(" ",2)[0] + " not found in market.");
 			message.send(plugin.shop_tag + "{ERR}Use {CMD}/shop add{ERR} instead.");
 			return false;
 		}
@@ -825,18 +862,18 @@ public class iListen extends PlayerListener
 				itemString = itemSubStrings[0] + " " + itemSubStrings[1];
 					else
 						itemString = itemSubStrings[0];
-				}
+		}
 				
-				MarketItem updated = new MarketItem(itemString, prevData, plugin.db, shopLabel);
+		MarketItem updated = new MarketItem(itemString, prevData, plugin.db, shopLabel);
  
-				if ((updated.count < 1) || (updated.count > plugin.max_per_sale)) {
-					message.send(plugin.shop_tag + "{ERR}Invalid amount. (Range: 1.." + plugin.max_per_sale + ")");
-					return false;
-				}
+		if ((updated.count < 1) || (updated.count > plugin.max_per_sale)) {
+			message.send(plugin.shop_tag + "{ERR}Invalid bundle size. (Range: 1.." + plugin.max_per_sale + ")");
+			return false;
+		}
  
-				if (plugin.db.update(updated))
-				{
-					message.send(plugin.shop_tag + "Item {PRM}" + updated.getName() + "{} updated:");
+		if (plugin.db.update(updated))
+		{
+			message.send(plugin.shop_tag + "Item {PRM}" + updated.getName() + "{} updated:");
 			//message.send(updated.infoStringBuy());
 			//message.send(updated.infoStringSell());
 			ArrayList<String> thisList = updated.infoStringFull();
@@ -847,9 +884,9 @@ public class iListen extends PlayerListener
 		else
 		{
 			message.send(plugin.shop_tag + "Item {PRM}" + updated.getName() + "{} update {ERR}failed.");
-					return false;
-				}
-			}
+			return false;
+		}
+	}
 			
 	private boolean shopRemoveItem(String itemString, Messaging message, String shopLabel)
 	{

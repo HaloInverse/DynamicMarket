@@ -636,12 +636,13 @@ public class DatabaseMarket extends DatabaseCore
 		myQuery.prepareStatement("UPDATE " + tableName + " SET " + fieldName + " = " + updExpr + " WHERE (shoplabel = ? AND " + whereClause + ")");
 	}
 	
-	public boolean updateAllFromTags(String initData[], String shopLabel)
+	public boolean updateAllFromTags(String initString, String shopLabel)
 	{
 		// Update table data from a list of tags.
 		// Applies changes to every element of the table matching shopLabel.
 		// Mirrors MarketItem.parseTags.
 		// Element [0] is used only to extract count, if provided.
+		String initData[] = initString.split(" ");
 		String curTag;
 		Integer curVal;
 		String stringVal;
