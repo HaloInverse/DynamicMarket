@@ -83,13 +83,17 @@ public class MarketItem extends ItemClump {
 		//TODO: Add alternate input format for setting low/high ranges with a single tag.
 		
 		super(initString.split(" ",2)[0], thisDB, thisShopLabel); // Parse id/name, type, and count from first split.
-		
+				
 		thisDatabase = thisDB;
 		shopLabel = thisShopLabel;
 		
 		//SimpleMarket.log.info("[1] InitString: [" + initString + "]");
 		
 		String[] initData = initString.split(" ");
+		
+		// If 0th tag (name) does not contain ":", use count from defaults.
+		if(!initData[0].contains(":"))
+			this.count = defaults.count;
 		 		
 		// Load defaults, if available.
 		if (defaults != null)

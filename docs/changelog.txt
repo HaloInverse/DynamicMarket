@@ -21,7 +21,6 @@ TODO:
     - Threading of tasks when applicable.
     - Auto-transactions triggered by market condition/timer.
         - External plugin?
-    - Improve multiple-field-updates in database code.
     - Migrate usage of MarketItem.parseTags to DatabaseMarket.parseTags.
     
 0.4.8...:
@@ -37,6 +36,7 @@ TODO:
         - stockCeil/stockFloor is set to stockFloor if lower/higher than stock.
         - priceCeil is raised to priceFloor if priceCeil<priceFloor.
             - Previous behaviours: Swap if order wrong, range-crop stock if outside highest/lowest/floor/ceil.
+    - Fixed bug: Adding items without specifying count did not import count from default record.
     
 0.4.7.1:
     - The beginnings of multi-economy support.
