@@ -17,24 +17,32 @@ TODO:
             - INT driftout (% of stock to average into avgstock, 0-100)
             - INT driftin (% of avgstock to average into stock, 0-100)
             - INT avgstock (rolling average of stock level)
-    - Support for "item id" "all" to allow for global editing of data by command.
-        - Supply data object + mask object to MarketDatabase.
+    - Extend "item=all" support to allow for numeric range/set entry.
     - Threading of tasks when applicable.
     - Auto-transactions triggered by market condition/timer.
         - External plugin?
     - Improve multiple-field-updates in database code.
+    - Migrate usage of MarketItem.parseTags to DatabaseMarket.parseTags.
     
 0.4.8...:
     - shopLabel moved from a table name suffix to a table field.
     - Redundant shopLabel parameters removed when the shopLabel could be extracted from a MarketItem object.
     - Added DatabaseMarket.updateAllFromTags() to apply a series of tags to all items at once.
+        - Using "all" as the item name now applies the given tags to all items with the current shopLabel.
     - Altering an item's bundleSize now changes its stock level, as well as its basePrice.
         - New stock level is rounded down, to stave off future item duplication issues.
         - Player shops will have to eject items which do not fit in an integer number of bundles.
+    - Sanity-check behaviour changed to make database queries more efficient and fend off future exploits:
+        - stockHighest/stockLowest set to stock if lower/higher than stock.
+        - stockCeil/stockFloor is set to stockFloor if lower/higher than stock.
+        - priceCeil is raised to priceFloor if priceCeil<priceFloor.
+            - Previous behaviours: Swap if order wrong, range-crop stock if outside highest/lowest/floor/ceil.
     
 0.4.7.1:
     - The beginnings of multi-economy support.
-    - Works, but not graceful or easy. Rolled back until my Java-Fu improves.
+    - Works, but not graceful or easy. Error type and superclass inheritance workaround was very kludgy.
+        - Rolled back until my Java-Fu improves.
+        - Test further with a tester plugin, not the main DynamicMarket code.
     
 0.4.7:
     - Updated iConomy support for newer versions.

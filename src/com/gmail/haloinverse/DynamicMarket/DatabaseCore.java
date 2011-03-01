@@ -9,13 +9,13 @@ import java.util.ArrayList;
 		  
 public abstract class DatabaseCore
 {
-		public Type database = null;
+		public Type databaseType = null;
 		public String tableName; // default: SimpleMarket
 		public DynamicMarket plugin = null;
 		public String engine = "MyISAM";
 
-		public DatabaseCore(Type database, String tableAccessed, String thisEngine, DynamicMarket thisPlugin) {
-     		this.database = database;
+		public DatabaseCore(Type databaseType, String tableAccessed, String thisEngine, DynamicMarket thisPlugin) {
+     		this.databaseType = databaseType;
 	  		this.tableName = tableAccessed;
 	  		if (thisEngine != null)
 	  			engine = thisEngine;
@@ -77,7 +77,7 @@ public abstract class DatabaseCore
 			protected Connection connection() throws ClassNotFoundException, SQLException {
 				//CHANGED: Sets connections to auto-commit, rather than emergency commit-on-close behaviour.
 				Connection newConn;
-				if (this.database.equals(Type.SQLITE)) {
+				if (this.databaseType.equals(Type.SQLITE)) {
 /*  52 */       	Class.forName("org.sqlite.JDBC");
 /*  53 */       	newConn = DriverManager.getConnection(DynamicMarket.sqlite);
 					return newConn;
@@ -90,7 +90,7 @@ public abstract class DatabaseCore
 
 		protected String dbTypeString()
 		{
-			return ((this.database.equals(Type.SQLITE)) ? "sqlite" : "mysql");
+			return ((this.databaseType.equals(Type.SQLITE)) ? "sqlite" : "mysql");
 		}
 		
 		protected void logSevereException(String exDesc, Exception exDetail)

@@ -52,6 +52,14 @@ public class SQLHandler {
 			}
 			if (conn != null)
 			{
+				// Switch GREATEST/LEAST for MAX/MIN with SQLite.
+				if (connDB.databaseType.equals(DatabaseCore.Type.SQLITE))
+				{
+					if(sqlString.contains("GREATEST"))
+						sqlString = sqlString.replaceAll("GREATEST", "MAX");
+					if(sqlString.contains("LEAST"))
+						sqlString = sqlString.replaceAll("LEAST", "MIN");
+				}
 				ps = conn.prepareStatement(sqlString);
 				for(int i = 1; i <= inputList.size(); ++i)
 				{

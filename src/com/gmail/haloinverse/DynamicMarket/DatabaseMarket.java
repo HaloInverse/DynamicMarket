@@ -43,7 +43,7 @@ public class DatabaseMarket extends DatabaseCore
 	
 	protected void checkNewFields()
 	{
-		checkColumn("shoplabel", (this.database.equals(Type.SQLITE)?
+		checkColumn("shoplabel", (this.databaseType.equals(Type.SQLITE)?
 				"TEXT NOT NULL DEFAULT ''; CREATE INDEX shoplabelIndex ON Market (shoplabel)"
 				: "CHAR(20) NOT NULL DEFAULT ''; CREATE INDEX shopLabelIndex ON Market (shopLabel)"));
 	}
@@ -60,7 +60,7 @@ public class DatabaseMarket extends DatabaseCore
 	
 	protected boolean createTable() {
 		SQLHandler myQuery = new SQLHandler(this);
-		if (this.database.equals(Type.SQLITE))
+		if (this.databaseType.equals(Type.SQLITE))
 			myQuery.executeStatement("CREATE TABLE " + tableName + " ( id INTEGER PRIMARY KEY AUTOINCREMENT, " +
 					"item INT NOT NULL, " +
 					"subtype INT NOT NULL, " +
@@ -186,7 +186,7 @@ public class DatabaseMarket extends DatabaseCore
 		myQuery.inputList.add(updated.shopLabel);
 		
 		myQuery.prepareStatement("UPDATE " + tableName + " SET count = ?, name = ?, baseprice = ?, stock = ?, canbuy = ?, cansell = ?, volatility = ?, " +
-				"salestax = ?, stocklowest = ?, stockhighest = ?, stockfloor = ?, stockceil = ?, pricefloor = ?, priceceil = ? WHERE item = ? AND subtype = ? AND shoplabel = ? " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
+				"salestax = ?, stocklowest = ?, stockhighest = ?, stockfloor = ?, stockceil = ?, pricefloor = ?, priceceil = ? WHERE item = ? AND subtype = ? AND shoplabel = ? " + ((this.databaseType.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
 
 		myQuery.executeUpdates();
 		
@@ -341,10 +341,10 @@ public class DatabaseMarket extends DatabaseCore
 		myQuery.inputList.add(thisItem.itemId);
 		myQuery.inputList.add(thisItem.subType);
   		myQuery.inputList.add(shopLabel);
-		if (this.database.equals(Type.SQLITE))
-			myQuery.prepareStatement("UPDATE " + tableName + " SET stock = min(stock + ?, stockceil) WHERE (item = ? AND subtype = ? AND shoplabel = ?) " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
+		if (this.databaseType.equals(Type.SQLITE))
+			myQuery.prepareStatement("UPDATE " + tableName + " SET stock = min(stock + ?, stockceil) WHERE (item = ? AND subtype = ? AND shoplabel = ?) " + ((this.databaseType.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
 		else
-			myQuery.prepareStatement("UPDATE " + tableName + " SET stock = LEAST(stock + ?, stockceil) WHERE (item = ? AND subtype = ? AND shoplabel = ?) " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
+			myQuery.prepareStatement("UPDATE " + tableName + " SET stock = LEAST(stock + ?, stockceil) WHERE (item = ? AND subtype = ? AND shoplabel = ?) " + ((this.databaseType.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
 			
 
 		myQuery.executeUpdates();
@@ -362,10 +362,10 @@ public class DatabaseMarket extends DatabaseCore
 		myQuery.inputList.add(thisItem.itemId);
 		myQuery.inputList.add(thisItem.subType);
   		myQuery.inputList.add(shopLabel);
-		if (this.database.equals(Type.SQLITE))
-			myQuery.prepareStatement("UPDATE " + tableName + " SET stock = max(stock - ?, stockfloor) WHERE (item = ? AND subtype = ? AND shoplabel = ?) " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
-		else
-			myQuery.prepareStatement("UPDATE " + tableName + " SET stock = GREATEST(stock - ?, stockfloor) WHERE (item = ? AND subtype = ? AND shoplabel = ?) " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
+		//if (this.databaseType.equals(Type.SQLITE))
+		//	myQuery.prepareStatement("UPDATE " + tableName + " SET stock = max(stock - ?, stockfloor) WHERE (item = ? AND subtype = ? AND shoplabel = ?))");
+		//else
+			myQuery.prepareStatement("UPDATE " + tableName + " SET stock = GREATEST(stock - ?, stockfloor) WHERE (item = ? AND subtype = ? AND shoplabel = ?) LIMIT 1");
 		
 		myQuery.executeUpdates();
 		
@@ -499,7 +499,7 @@ public class DatabaseMarket extends DatabaseCore
 			myQuery.inputList.add(removed.itemId);
 			myQuery.inputList.add(removed.subType);
 	  		myQuery.inputList.add(shopLabel);
-			myQuery.prepareStatement("DELETE FROM " + tableName + " WHERE (item = ? AND subtype = ? AND shoplabel = ?) " + ((this.database.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
+			myQuery.prepareStatement("DELETE FROM " + tableName + " WHERE (item = ? AND subtype = ? AND shoplabel = ?) " + ((this.databaseType.equals(Type.SQLITE)) ? "" : " LIMIT 1"));
 
 			myQuery.executeUpdates();
 			
@@ -1019,10 +1019,61 @@ public class DatabaseMarket extends DatabaseCore
 		
 		myQuery.close();
 
+		sanityCheckAll(shopLabel);
+		
 		return myQuery.isOK;
 		
 	}
 
+	private boolean sanityCheckAll(String shopLabel)
+	{
+		// Check and fix possible chaos-inducing data.
+		// Mirrors marketItem.sanityCheck.
+		
+		SQLHandler myQuery = new SQLHandler(this);
+		
+		// Check range of salesTax
+		//this.salesTax = rangeCrop(this.salesTax, 0, 100);
+		myQuery.inputList.add(shopLabel);
+		myQuery.prepareStatement("UPDATE "+tableName+" SET salestax = LEAST(100, GREATEST(salestax, 0)) WHERE shoplabel = ?");
+		
+		//if (this.stockHighest < this.stock)
+		//	this.stockHighest = this.stock;
+		myQuery.inputList.add(shopLabel);
+		myQuery.prepareStatement("UPDATE "+tableName+" SET stockhighest = stock WHERE (shoplabel = ? AND stockhighest < stock)");
+		
+		//if (this.stockLowest > this.stock)
+		//	this.stockLowest = this.stock;		
+		myQuery.inputList.add(shopLabel);
+		myQuery.prepareStatement("UPDATE "+tableName+" SET stocklowest = stock WHERE (shoplabel = ? AND stocklowest > stock)");
+		
+
+		//if (this.stockCeil < this.stock)
+		//	this.stockCeil = this.stock;
+		myQuery.inputList.add(shopLabel);
+		myQuery.prepareStatement("UPDATE "+tableName+" SET stockceil = stock WHERE (shoplabel = ? AND stockceil < stock)");
+
+		//if (this.stockFloor > this.stock)
+		//	this.stockFloor = this.stock;
+		myQuery.inputList.add(shopLabel);
+		myQuery.prepareStatement("UPDATE "+tableName+" SET stockfloor = stock WHERE (shoplabel = ? AND stockfloor > stock)");
+		
+		//if (this.priceCeil < this.priceFloor)
+		//	this.priceCeil = this.priceFloor;
+		myQuery.inputList.add(shopLabel);
+		myQuery.prepareStatement("UPDATE "+tableName+" SET priceceil = pricefloor WHERE (shoplabel = ? AND priceceil < pricefloor)");
+			
+		// Check range of basePrice
+		//this.basePrice = Math.max(0, this.basePrice);
+		myQuery.inputList.add(shopLabel);
+		myQuery.prepareStatement("UPDATE "+tableName+" SET baseprice = 0 WHERE (shoplabel = ? AND baseprice < 0)");
+		
+		myQuery.executeUpdates();
+		
+		myQuery.close();
+		
+		return myQuery.isOK;
+	}
 	
 	/*
 	private boolean updateAll(String[] fieldName, Object[] newValue, String shopLabel)
