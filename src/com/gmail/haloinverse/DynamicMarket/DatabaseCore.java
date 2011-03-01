@@ -97,6 +97,11 @@ public abstract class DatabaseCore
 		{
 			plugin.log.severe("[" + plugin.name + "]: " + exDesc + ": " + exDetail);
 		}
+		
+		protected void logSevereException(String exDesc)
+		{
+			plugin.log.severe("[" + plugin.name + "]: " + exDesc);
+		}
 
 		protected boolean checkTable(String tableSuffix)
 		{

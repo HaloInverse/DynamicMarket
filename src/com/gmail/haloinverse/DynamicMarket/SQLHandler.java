@@ -24,6 +24,7 @@ public class SQLHandler {
 	{
 		isOK = true;
 		inputList = new ArrayList<Object>();
+		psList = new ArrayList<PreparedStatement>();
 		connDB = thisDB;
 		try {
 			conn = connDB.connection();

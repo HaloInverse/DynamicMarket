@@ -34,11 +34,10 @@ public class DatabaseMarket extends DatabaseCore
 		SQLHandler myQuery = new SQLHandler(this);
 		if (!myQuery.checkColumnExists(tableName, columnName))
 		{
-			myQuery.prepareStatement("ALTER TABLE " + tableName + " ADD ? ?");
-			myQuery.inputList.add(columnName);
-			myQuery.inputList.add(columnDef);
+			myQuery.prepareStatement("ALTER TABLE " + tableName + " ADD " + columnName + " " + columnDef);
 			myQuery.executeUpdates();
 		}
+		myQuery.close();
 	}
 	
 	protected void checkNewFields()
@@ -282,11 +281,18 @@ public class DatabaseMarket extends DatabaseCore
 		try {
 			if (myQuery.rs != null)
 				if (myQuery.rs.next())
+				{
 					//data = new ShopItem(myQuery.rs.getInt("item"), myQuery.rs.getInt("type"), myQuery.rs.getInt("buy"), myQuery.rs.getInt("sell"), myQuery.rs.getInt("per"));
 					fetchedData = new MarketItem(myQuery);
-					fetchedData.shopLabel = shopLabel;
+					if (fetchedData == null)
+					{
+						logSevereException("MarketItem creation from query failed. " + dbTypeString());	
+						myQuery.close();
+						return null;
+					}
 					fetchedData.thisDatabase = this;
 					// TODO: Change constructor to take a ResultSet and throw SQLExceptions.
+				}
 		} catch (SQLException ex) {
 			logSevereException("Error retrieving shop item data with " + dbTypeString(), ex);
 			fetchedData = null;
