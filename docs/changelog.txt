@@ -23,7 +23,7 @@ TODO:
         - External plugin?
     - Migrate usage of MarketItem.parseTags to DatabaseMarket.parseTags.
     
-0.4.8...:
+0.4.8:
     - shopLabel moved from a table name suffix to a table field.
     - Redundant shopLabel parameters removed when the shopLabel could be extracted from a MarketItem object.
     - Added DatabaseMarket.updateAllFromTags() to apply a series of tags to all items at once.
